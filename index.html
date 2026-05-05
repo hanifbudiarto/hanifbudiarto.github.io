@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Corporate Slavery Simulator</title>
+    <title>Corporate Slavery Simulator 2026</title>
     <style>
         :root {
-            --bg-color: #0d0d0d;
-            --card-color: #1a1a1a;
+            --bg-color: #0a0a0a;
+            --accent: #ff3e3e;
             --text-main: #e0e0e0;
-            --text-dim: #666;
-            --accent: #ff3e3e; /* Burnout Red */
         }
 
         body {
@@ -34,6 +32,7 @@
             width: 100%;
             text-align: center;
             z-index: 10;
+            pointer-events: none;
         }
 
         h1 {
@@ -42,24 +41,17 @@
             text-transform: uppercase;
             margin: 0;
             color: var(--accent);
-            text-shadow: 0 0 10px rgba(255, 62, 62, 0.5);
-        }
-
-        .subtitle {
-            font-size: 12px;
-            color: var(--text-dim);
-            margin-top: 5px;
         }
 
         .score-board {
             position: absolute;
             top: 80px;
             left: 20px;
-            font-size: 0.9rem;
+            font-size: 1rem;
             background: rgba(255, 255, 255, 0.05);
             padding: 15px;
             border-left: 3px solid var(--accent);
-            backdrop-filter: blur(5px);
+            z-index: 20;
         }
 
         .doodle-target {
@@ -67,58 +59,55 @@
             width: 70px;
             height: 70px;
             cursor: pointer;
-            filter: grayscale(1) invert(0.1);
-            transition: transform 0.05s, opacity 0.3s;
-        }
-
-        .doodle-target:active {
-            transform: scale(0.8) rotate(-10deg);
-            filter: grayscale(0) sepia(1) saturate(5);
+            z-index: 5;
+            transition: transform 0.05s;
         }
 
         .bubble {
             position: absolute;
             color: var(--accent);
             font-weight: bold;
-            font-size: 14px;
+            font-size: 13px;
             pointer-events: none;
-            animation: glitchFloat 1.5s forwards;
-            white-space: nowrap;
+            animation: jitter 0.1s infinite;
+            z-index: 30;
             text-shadow: 2px 2px #000;
         }
+		
+		@keyframes jitter {
+			0% { transform: translate(0,0); }
+			50% { transform: translate(1px, -1px); }
+			100% { transform: translate(-1px, 1px); }
+		}
 
         @keyframes glitchFloat {
-            0% { opacity: 0; transform: translateY(0) scale(0.5); }
-            20% { opacity: 1; transform: translateY(-10px) skewX(-10deg); }
-            80% { opacity: 1; }
-            100% { opacity: 0; transform: translateY(-100px) scale(1.2); }
+            0% { opacity: 0; transform: translateY(0); }
+            20% { opacity: 1; transform: translateY(-10px); }
+            100% { opacity: 0; transform: translateY(-80px); }
         }
 
-        .burnout-overlay {
+        #overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 0, 0, 0.1);
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 0, 0, 0);
             pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.5s;
+            z-index: 100;
+            transition: background 0.5s;
         }
     </style>
 </head>
 <body>
 
-    <div class="burnout-overlay" id="overlay"></div>
+    <div id="overlay"></div>
 
     <div class="header">
-        <h1>Slavery Simulator 2026</h1>
-        <div class="subtitle">"Kamu bukan keluarga kami. Kamu cuma angka di spreadsheet."</div>
+        <h1>SLAVERY SIMULATOR</h1>
+        <div style="font-size: 10px; color: #555;">"Kerja, kerja, kerja, mati."</div>
     </div>
 
     <div class="score-board">
-        Waktu Hidup yang Terbuang: <span id="score">0</span> Jam<br>
-        <span id="insult" style="color: #666; font-size: 10px; margin-top: 10px; display: block;">
+        Eksploitasi: <span id="score-val">0</span> Jam<br>
+        <span id="insult-text" style="color: #888; font-size: 11px; display: block; margin-top: 10px;">
             Status: Masih bisa diperas.
         </span>
     </div>
@@ -127,115 +116,145 @@
 
     <script>
         const container = document.getElementById('game-container');
-        const scoreElement = document.getElementById('score');
-        const insultElement = document.getElementById('insult');
+        const scoreDisplay = document.getElementById('score-val');
+        const insultDisplay = document.getElementById('insult-text');
         const overlay = document.getElementById('overlay');
+        
         let score = 0;
 
-        const darkQuotes = [
-            "Gaji segini mau minta healing?",
-            "Anak istri lupa muka kamu.",
-            "Posisi kamu bisa diganti besok pagi.",
-            "KPI kamu merah, nyawa kamu murah.",
-            "Kerja keraslah sampai bosmu beli Ferrari baru.",
-            "Cuti itu mitos, lembur itu kewajiban.",
-            "Ingat, kamu cuma aset yang menyusut.",
-            "Mental health? Kerjain dulu laporannya.",
-            "Weekend itu cuma hari Senin yang tertunda.",
-            "Mati di meja kerja adalah dedikasi.",
-            "Passion kamu tidak membayar tagihan listrik.",
-            "Stakeholder tidak peduli kamu belum tidur.",
-            "Jangan lupa absen, atau gaji dipotong lagi.",
-            "Loyalitas itu gratis, lembur itu tanpa bayar.",
-            "Sudah berguna apa kamu hari ini?",
-            "Mimpi tinggi, tapi skill medioker.",
-            "Kamu burnout? Tim lain lebih capek.",
-            "Feedback: Performa kamu mengecewakan."
-        ];
+const darkQuotes = [
+    // --- Golongan Gaji & Finansial ---
+    "Gaji segini mau minta healing?", "Cicilanmu lebih setia daripada perusahaan ini.",
+    "Inflasi naik 10%, gajimu naik 0%.", "Tabunganmu cukup untuk bertahan 3 jam.",
+    "Bekerjalah sampai bosmu beli jet pribadi.", "Bonus itu mitos, lembur itu pasti.",
+    "Self-reward pakai uang yang sebenarnya tidak ada.", "Kamu tidak dibayar untuk punya perasaan.",
+    "Tanggal tua adalah identitasmu.", "Dompetmu lebih kosong dari janji manis HR.",
+
+    // --- Golongan Eksploitasi & Lembur ---
+    "Cuti itu sekadar memindahkan meja kerja ke rumah.", "Weekend hanyalah Senin yang menyamar.",
+    "Pulang cepat adalah pengkhianatan.", "Keluargamu lupa cara mengeja namamu.",
+    "Mati di meja kerja adalah KPI tertinggi.", "Laptopmu adalah borgol modern.",
+    "Tidur hanyalah kegagalan manajemen waktu.", "Mata panda adalah lencana kehormatanmu.",
+    "Istirahat? Nanti saja di alam kubur.", "Kamu tidak butuh vitamin, kamu butuh deadline baru.",
+
+    // --- Golongan Toxic Positivity & Gaslighting ---
+    "Kita kan sudah seperti keluarga (yang beracun).", "Coba lihat sisi positifnya (nggak ada).",
+    "Kamu harus lebih 'agile' menderita.", "Tantangan ini akan mendewasakanmu (dan merusak mentalmu).",
+    "Jangan kerja keras, kerja cerdas (padahal disuruh dua-duanya).", "Passionmu adalah bahan bakar eksploitasi kami.",
+    "Dulu saya lebih parah dari kamu.", "Syukuri saja, di luar sana banyak yang pengangguran.",
+    "Kamu kurang bersyukur, makanya cepat burnout.", "Mari kita 'align' ekspektasi penderitaan kita.",
+
+    // --- Golongan Ketidaktergantian & Ketidakberartian ---
+    "Posisi kamu bisa diganti besok pagi.", "Kamu cuma angka di spreadsheet yang bisa dihapus.",
+    "Namamu di kartu nama lebih berharga dari nyawamu.", "Perusahaan tetap jalan kalau kamu mati hari ini.",
+    "Kamu cuma aset yang terus menyusut.", "Jangan baper, ini cuma bisnis.",
+    "Loyalitasmu tidak akan masuk dalam warisan.", "Siapa namamu tadi? Ah, sudahlah, kerjakan saja.",
+    "Kamu bukan pahlawan, kamu cuma sekrup yang karatan.", "Ingat, kamu mudah dilupakan.",
+
+    // --- Golongan Tekanan Stakeholder & Karir ---
+    "Stakeholder tidak peduli kamu belum makan.", "Revisi ini demi masa depan (yang bukan milikmu).",
+    "Urgent bagi mereka, lembur bagi kamu.", "Naik jabatan, naik pula dosis obat stresmu.",
+    "Inovasi atau mati (tetap saja mati).", "Karier hanyalah labirin tanpa jalan keluar.",
+    "Networking itu cuma ajang pamer penderitaan.", "Mimpi tinggi, skill medioker.",
+    "Skill-mu sudah basi sejak dua jam yang lalu.", "Belajar terus sampai lupa cara hidup.",
+
+    // --- Golongan Kesehatan Mental & Fisik ---
+    "Mental health? Kerjakan dulu laporannya.", "Burnout hanyalah istilah untuk orang lemah.",
+    "Asam lambungmu adalah bukti dedikasi.", "Rambut rontok demi target tercapai.",
+    "Kopi adalah darahmu sekarang.", "Punggungmu sudah membentuk kursi kantor.",
+    "Obat tidur adalah sahabat terbaikmu.", "Jantungmu berdetak mengikuti notifikasi Slack.",
+    "Air mata tidak bisa di-convert jadi PDF.", "Panic attack? Selesaikan dulu meeting-nya.",
+
+    // --- Golongan Realita Pahit ---
+    "Senin adalah monster yang nyata.", "Meeting ini sebenarnya bisa lewat email.",
+    "Email ini sebenarnya tidak perlu dibaca.", "Dokumentasi ini tidak akan pernah dibaca.",
+    "Requirement berubah saat kamu hampir selesai.", "Bug ini adalah fitur baru (katanya).",
+    "Technical debt-mu sudah setinggi gedung ini.", "Dunia tetap berputar tanpa keberhasilanmu.",
+    "Bahagia itu rencana tahun depan.", "Harapan adalah kesalahan terbesar di kantor ini.",
+
+    // --- Golongan Sinis & Menyakitkan ---
+    "Kamu itu investasi bodong.", "Otakmu butuh upgrade, tapi budget-nya nggak ada.",
+    "Terima kasih atas kerja kerasmu (tidak tulus).", "Jangan terlalu percaya diri, kamu cuma beruntung.",
+    "Ide kamu bagus, tapi kita pakai ide bos saja.", "Feedback: Kamu mengecewakan.",
+    "Sudah berapa banyak umur yang kamu jual hari ini?", "Suaramu tidak terdengar di ruang rapat.",
+    "Kamu terlalu mahal untuk hasil seminim ini.", "Jangan tanya 'kenapa', tanya 'kapan selesai'.",
+
+    // --- Golongan Akhir Zaman Korporat ---
+    "Selamat datang di neraka ber-AC.", "Borgolmu tidak terlihat, tapi terasa berat.",
+    "Kebebasan hanyalah ilusi saat jam makan siang.", "Masa depanmu sudah di-outsourcing.",
+    "Kamu adalah robot yang gagal diprogram.", "Kubikelmu adalah peti matimu.",
+    "Selamat menikmati sisa hidup yang tidak seberapa.", "Satu klik lagi menuju kehancuran.",
+    "Jangan berhenti, kemiskinan mengintaimu.", "Hidupmu adalah draf yang ditolak Tuhan."
+];
 
         const statusLevels = [
-            { threshold: 10, text: "Status: Budak magang yang naif." },
-            { threshold: 30, text: "Status: Robot Excel berjalan." },
-            { threshold: 60, text: "Status: Zombie korporat level 1." },
-            { threshold: 100, text: "Status: Menunggu serangan jantung." },
-            { threshold: 200, text: "Status: Jiwa sudah terjual sepenuhnya." }
+            { threshold: 100, text: "Status: LIMBAH INDUSTRI." },
+            { threshold: 50, text: "Status: Zombie Korporat." },
+            { threshold: 25, text: "Status: Robot Excel." },
+            { threshold: 10, text: "Status: Budak Magang Naif." },
+            { threshold: 0, text: "Status: Masih bisa diperas." }
         ];
+
+        function updateStatus() {
+            // Logika pencarian status yang pasti jalan
+            for (let i = 0; i < statusLevels.length; i++) {
+                if (score >= statusLevels[i].threshold) {
+                    insultDisplay.innerText = statusLevels[i].text;
+                    break;
+                }
+            }
+        }
 
         function createTask() {
             const task = document.createElement('div');
             task.className = 'doodle-target';
-            
-            // Icon kertas yang lebih kusam
             task.innerHTML = `
                 <svg viewBox="0 0 100 100">
                     <rect x="20" y="15" width="60" height="70" fill="#222" stroke="#444" stroke-width="2"/>
                     <line x1="35" y1="35" x2="65" y2="35" stroke="#ff3e3e" stroke-width="3"/>
-                    <line x1="35" y1="50" x2="65" y2="50" stroke="#444" stroke-width="2"/>
-                    <line x1="35" y1="65" x2="55" y2="65" stroke="#444" stroke-width="2"/>
-                </svg>
-            `;
+                </svg>`;
 
             const x = Math.random() * (window.innerWidth - 100);
-            const y = Math.random() * (window.innerHeight - 200) + 120;
+            const y = Math.random() * (window.innerHeight - 150) + 100;
 
             task.style.left = x + 'px';
             task.style.top = y + 'px';
 
-            task.addEventListener('click', () => {
+            task.onclick = function() {
                 score++;
-                scoreElement.innerText = score;
+                scoreDisplay.innerText = score; // Update angka skor
                 
-                // Update status
-                const currentStatus = statusLevels.findLast(s => score >= s.threshold);
-                if (currentStatus) insultElement.innerText = currentStatus.text;
+                updateStatus(); // Update teks status
 
-                // Burnout effect
-                overlay.style.opacity = (score % 50) / 100;
+                // Efek visual burnout (layar memerah)
+                overlay.style.backgroundColor = `rgba(255, 0, 0, ${Math.min(score/100, 0.5)})`;
 
                 showBubble(x, y);
-
-                task.remove();
+                this.remove();
                 
-                // Semakin tinggi score, semakin banyak task baru (multiplier)
-                const spawnCount = score > 50 ? 3 : 2;
-                for(let i=0; i < spawnCount; i++) {
-                    if (Math.random() > 0.4) setTimeout(createTask, Math.random() * 500);
-                }
-            });
+                // Spawn tugas baru secara agresif
+                if (Math.random() > 0.2) createTask();
+                if (score > 20 && Math.random() > 0.5) createTask();
+            };
 
             container.appendChild(task);
 
-            // Task hilang sendiri = deadline lewat (skor tidak nambah, stres nambah)
-            setTimeout(() => {
-                if(task.parentElement) {
-                    task.style.opacity = '0';
-                    setTimeout(() => task.remove(), 300);
-                }
-            }, 2500);
+            // Tugas hilang otomatis (deadline)
+            setTimeout(() => { if(task.parentNode) task.remove(); }, 3000);
         }
 
         function showBubble(x, y) {
-            const bubble = document.createElement('div');
-            bubble.className = 'bubble';
-            bubble.style.left = (x - 20) + 'px';
-            bubble.style.top = y + 'px';
-            bubble.innerText = darkQuotes[Math.floor(Math.random() * darkQuotes.length)];
-            container.appendChild(bubble);
-
-            setTimeout(() => bubble.remove(), 1500);
+            const b = document.createElement('div');
+            b.className = 'bubble';
+            b.style.left = x + 'px';
+            b.style.top = y + 'px';
+            b.innerText = darkQuotes[Math.floor(Math.random() * darkQuotes.length)];
+            container.appendChild(b);
+            setTimeout(() => b.remove(), 1000);
         }
 
-        // Interval spawn semakin cepat seiring waktu
-        let gameLoop = setInterval(createTask, 1200);
-        
-        // Mempercepat intensitas setiap 10 detik
-        setInterval(() => {
-            clearInterval(gameLoop);
-            const newInterval = Math.max(400, 1200 - (score * 5));
-            gameLoop = setInterval(createTask, newInterval);
-        }, 10000);
-
+        // Mulai permainan
+        setInterval(createTask, 1200);
     </script>
-
 </body>
 </html>
