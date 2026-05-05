@@ -250,7 +250,11 @@ const darkQuotes = [
             b.style.top = y + 'px';
             b.innerText = darkQuotes[Math.floor(Math.random() * darkQuotes.length)];
             container.appendChild(b);
-            setTimeout(() => b.remove(), 1000);
+            setTimeout(() => {
+		        b.style.transition = "opacity 1s";
+		        b.style.opacity = "0";
+		        setTimeout(() => b.remove(), 1000);
+		    }, 4000);
         }
 
         // Mulai permainan
