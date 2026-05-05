@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corporate Slavery Simulator</title>
+    <style>
+        :root {
+            --bg-color: #0d0d0d;
+            --card-color: #1a1a1a;
+            --text-main: #e0e0e0;
+            --text-dim: #666;
+            --accent: #ff3e3e; /* Burnout Red */
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            overflow: hidden;
+            color: var(--text-main);
+        }
+
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background: radial-gradient(circle, #1a1a1a 0%, #000 100%);
+        }
+
+        .header {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            margin: 0;
+            color: var(--accent);
+            text-shadow: 0 0 10px rgba(255, 62, 62, 0.5);
+        }
+
+        .subtitle {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-top: 5px;
+        }
+
+        .score-board {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-left: 3px solid var(--accent);
+            backdrop-filter: blur(5px);
+        }
+
+        .doodle-target {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            cursor: pointer;
+            filter: grayscale(1) invert(0.1);
+            transition: transform 0.05s, opacity 0.3s;
+        }
+
+        .doodle-target:active {
+            transform: scale(0.8) rotate(-10deg);
+            filter: grayscale(0) sepia(1) saturate(5);
+        }
+
+        .bubble {
+            position: absolute;
+            color: var(--accent);
+            font-weight: bold;
+            font-size: 14px;
+            pointer-events: none;
+            animation: glitchFloat 1.5s forwards;
+            white-space: nowrap;
+            text-shadow: 2px 2px #000;
+        }
+
+        @keyframes glitchFloat {
+            0% { opacity: 0; transform: translateY(0) scale(0.5); }
+            20% { opacity: 1; transform: translateY(-10px) skewX(-10deg); }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-100px) scale(1.2); }
+        }
+
+        .burnout-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 0, 0, 0.1);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="burnout-overlay" id="overlay"></div>
+
+    <div class="header">
+        <h1>Slavery Simulator 2026</h1>
+        <div class="subtitle">"Kamu bukan keluarga kami. Kamu cuma angka di spreadsheet."</div>
+    </div>
+
+    <div class="score-board">
+        Waktu Hidup yang Terbuang: <span id="score">0</span> Jam<br>
+        <span id="insult" style="color: #666; font-size: 10px; margin-top: 10px; display: block;">
+            Status: Masih bisa diperas.
+        </span>
+    </div>
+
+    <div id="game-container"></div>
+
+    <script>
+        const container = document.getElementById('game-container');
+        const scoreElement = document.getElementById('score');
+        const insultElement = document.getElementById('insult');
+        const overlay = document.getElementById('overlay');
+        let score = 0;
+
+        const darkQuotes = [
+            "Gaji segini mau minta healing?",
+            "Anak istri lupa muka kamu.",
+            "Posisi kamu bisa diganti besok pagi.",
+            "KPI kamu merah, nyawa kamu murah.",
+            "Kerja keraslah sampai bosmu beli Ferrari baru.",
+            "Cuti itu mitos, lembur itu kewajiban.",
+            "Ingat, kamu cuma aset yang menyusut.",
+            "Mental health? Kerjain dulu laporannya.",
+            "Weekend itu cuma hari Senin yang tertunda.",
+            "Mati di meja kerja adalah dedikasi.",
+            "Passion kamu tidak membayar tagihan listrik.",
+            "Stakeholder tidak peduli kamu belum tidur.",
+            "Jangan lupa absen, atau gaji dipotong lagi.",
+            "Loyalitas itu gratis, lembur itu tanpa bayar.",
+            "Sudah berguna apa kamu hari ini?",
+            "Mimpi tinggi, tapi skill medioker.",
+            "Kamu burnout? Tim lain lebih capek.",
+            "Feedback: Performa kamu mengecewakan."
+        ];
+
+        const statusLevels = [
+            { threshold: 10, text: "Status: Budak magang yang naif." },
+            { threshold: 30, text: "Status: Robot Excel berjalan." },
+            { threshold: 60, text: "Status: Zombie korporat level 1." },
+            { threshold: 100, text: "Status: Menunggu serangan jantung." },
+            { threshold: 200, text: "Status: Jiwa sudah terjual sepenuhnya." }
+        ];
+
+        function createTask() {
+            const task = document.createElement('div');
+            task.className = 'doodle-target';
+            
+            // Icon kertas yang lebih kusam
+            task.innerHTML = `
+                <svg viewBox="0 0 100 100">
+                    <rect x="20" y="15" width="60" height="70" fill="#222" stroke="#444" stroke-width="2"/>
+                    <line x1="35" y1="35" x2="65" y2="35" stroke="#ff3e3e" stroke-width="3"/>
+                    <line x1="35" y1="50" x2="65" y2="50" stroke="#444" stroke-width="2"/>
+                    <line x1="35" y1="65" x2="55" y2="65" stroke="#444" stroke-width="2"/>
+                </svg>
+            `;
+
+            const x = Math.random() * (window.innerWidth - 100);
+            const y = Math.random() * (window.innerHeight - 200) + 120;
+
+            task.style.left = x + 'px';
+            task.style.top = y + 'px';
+
+            task.addEventListener('click', () => {
+                score++;
+                scoreElement.innerText = score;
+                
+                // Update status
+                const currentStatus = statusLevels.findLast(s => score >= s.threshold);
+                if (currentStatus) insultElement.innerText = currentStatus.text;
+
+                // Burnout effect
+                overlay.style.opacity = (score % 50) / 100;
+
+                showBubble(x, y);
+
+                task.remove();
+                
+                // Semakin tinggi score, semakin banyak task baru (multiplier)
+                const spawnCount = score > 50 ? 3 : 2;
+                for(let i=0; i < spawnCount; i++) {
+                    if (Math.random() > 0.4) setTimeout(createTask, Math.random() * 500);
+                }
+            });
+
+            container.appendChild(task);
+
+            // Task hilang sendiri = deadline lewat (skor tidak nambah, stres nambah)
+            setTimeout(() => {
+                if(task.parentElement) {
+                    task.style.opacity = '0';
+                    setTimeout(() => task.remove(), 300);
+                }
+            }, 2500);
+        }
+
+        function showBubble(x, y) {
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.style.left = (x - 20) + 'px';
+            bubble.style.top = y + 'px';
+            bubble.innerText = darkQuotes[Math.floor(Math.random() * darkQuotes.length)];
+            container.appendChild(bubble);
+
+            setTimeout(() => bubble.remove(), 1500);
+        }
+
+        // Interval spawn semakin cepat seiring waktu
+        let gameLoop = setInterval(createTask, 1200);
+        
+        // Mempercepat intensitas setiap 10 detik
+        setInterval(() => {
+            clearInterval(gameLoop);
+            const newInterval = Math.max(400, 1200 - (score * 5));
+            gameLoop = setInterval(createTask, newInterval);
+        }, 10000);
+
+    </script>
+
+</body>
+</html>
