@@ -114,6 +114,29 @@
             z-index: 100;
             transition: background 0.5s;
         }
+
+		.islamic-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.95);
+    color: #1b5e20; /* Hijau tua Islami */
+    padding: 25px;
+    border-radius: 15px;
+    border: 4px double #4caf50;
+    text-align: center;
+    z-index: 1000;
+    box-shadow: 0 0 50px rgba(0,0,0,0.8);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    max-width: 80%;
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, -40%); }
+    to { opacity: 1; transform: translate(-50%, -50%); }
+}
     </style>
 </head>
 <body>
@@ -207,22 +230,39 @@ const darkQuotes = [
     "Jangan berhenti, kemiskinan mengintaimu.", "Hidupmu adalah draf yang ditolak Tuhan."
 ];
 
-        const statusLevels = [
-            { threshold: 100, text: "Status: LIMBAH INDUSTRI." },
-            { threshold: 50, text: "Status: Zombie Korporat." },
-            { threshold: 25, text: "Status: Robot Excel." },
-            { threshold: 10, text: "Status: Budak Magang Naif." },
-            { threshold: 0, text: "Status: Masih bisa diperas." }
-        ];
+const statusLevels = [
+    { threshold: 100, text: "Status: LIMBAH INDUSTRI.", msg: "Hasbunallah wanikmal wakil. Cukup Allah bagi kita, dan Dia sebaik-baik penolong." },
+    { threshold: 50, text: "Status: Zombie Korporat.", msg: "Dunia ini sementara, akhirat selamanya. Jangan biarkan duniamu mematikan hatimu." },
+    { threshold: 25, text: "Status: Robot Excel.", msg: "Innallaha ma'ashobirin. Sesungguhnya Allah bersama orang-orang yang sabar." },
+    { threshold: 10, text: "Status: Budak Magang Naif.", msg: "Jangan lupa bismillah sebelum kerja, agar lelahmu menjadi lillah." },
+    { threshold: 0, text: "Status: Masih bisa diperas.", msg: "Niatkan kerja untuk ibadah dan keluarga." }
+];
+
+		let currentLevel = 0; // Untuk melacak level saat ini
+
+function showIslamicOasis(message) {
+    const popup = document.createElement('div');
+    popup.className = 'islamic-popup';
+    popup.innerHTML = `
+        <h2 style="margin-top:0;">✨ Pengingat Sejenak ✨</h2>
+        <p style="font-style: italic; font-size: 1.1rem;">"${message}"</p>
+        <button onclick="this.parentElement.remove()" style="background:#4caf50; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer;">Aamiin, lanjut cari nafkah</button>
+    `;
+    document.body.appendChild(popup);
+}
 
         function updateStatus() {
-            // Logika pencarian status yang pasti jalan
-            for (let i = 0; i < statusLevels.length; i++) {
-                if (score >= statusLevels[i].threshold) {
-                    insultDisplay.innerText = statusLevels[i].text;
-                    break;
-                }
+for (let i = 0; i < statusLevels.length; i++) {
+        if (score >= statusLevels[i].threshold) {
+            // Jika level berubah (naik), munculkan dialog islami
+            if (currentLevel !== statusLevels[i].threshold) {
+                currentLevel = statusLevels[i].threshold;
+                showIslamicOasis(statusLevels[i].msg);
             }
+            insultDisplay.innerText = statusLevels[i].text;
+            break;
+        }
+    }
         }
 
         function createTask() {
