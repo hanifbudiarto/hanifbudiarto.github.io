@@ -63,16 +63,36 @@
             transition: transform 0.05s;
         }
 
-        .bubble {
-            position: absolute;
-            color: var(--accent);
-            font-weight: bold;
-            font-size: 13px;
-            pointer-events: none;
-            animation: jitter 0.1s infinite;
-            z-index: 30;
-            text-shadow: 2px 2px #000;
-        }
+.bubble {
+    position: absolute;
+    color: var(--accent);
+    font-weight: bold;
+    font-size: 14px; /* Sedikit lebih besar agar jelas */
+    pointer-events: none;
+    z-index: 100; /* Pastikan di paling depan */
+    text-shadow: 2px 2px #000;
+    max-width: 250px; /* Agar teks panjang tidak melebar ke samping */
+    line-height: 1.4;
+    animation: slowFloat 4s ease-out forwards; /* Durasi animasi disamakan */
+}
+
+@keyframes slowFloat {
+    0% { 
+        opacity: 0; 
+        transform: translateY(10px); 
+    }
+    10% { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+    80% { 
+        opacity: 1; 
+    }
+    100% { 
+        opacity: 0; 
+        transform: translateY(-40px); /* Naik pelan-pelan saja */
+    }
+}
 		
 		@keyframes jitter {
 			0% { transform: translate(0,0); }
