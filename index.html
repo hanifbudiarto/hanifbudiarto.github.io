@@ -203,7 +203,7 @@
         // --- CONFIG SUPABASE ---
         const SUPABASE_URL = 'https://ckzkqfajuhzytadsvolx.supabase.co'; 
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNremtxZmFqdWh6eXRhZHN2b2x4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwNTM0MjYsImV4cCI6MjA5MzYyOTQyNn0.FrwwcRHgxX-NbO3YvSs_7acVtlejKCNBvTFSQlilDJk';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         const container = document.getElementById('game-container');
         const scoreDisplay = document.getElementById('score-val');
@@ -239,7 +239,7 @@
         ];
 
         async function fetchLeaderboard() {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('leaderboard')
                 .select('name, score')
                 .order('score', { ascending: false })
@@ -255,7 +255,7 @@
 
         async function syncData() {
             if (!playerName) return;
-            await supabase
+            await supabaseClient
                 .from('leaderboard')
                 .upsert({ name: playerName, score: score }, { onConflict: 'name' });
             fetchLeaderboard();
