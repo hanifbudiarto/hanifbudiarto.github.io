@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Corporate Slavery Simulator 2026</title>
+    <title>Slavery Simulator 2026 - Global Edition</title>
+    <!-- Supabase Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --bg-color: #050505;
@@ -21,12 +23,52 @@
             transition: filter 0.5s ease;
         }
 
+        /* Layar Identifikasi (Login) */
+        #start-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: black;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .input-box {
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: white;
+            padding: 12px;
+            font-family: 'Courier New';
+            text-align: center;
+            margin-bottom: 20px;
+            outline: none;
+            width: 280px;
+            letter-spacing: 2px;
+        }
+
+        .btn-start {
+            background: var(--accent);
+            color: black;
+            border: none;
+            padding: 12px 35px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: 0.3s;
+        }
+
+        .btn-start:hover { background: white; }
+
+        /* Game UI */
         #game-container {
             width: 100vw;
             height: 100vh;
             position: relative;
             background: radial-gradient(circle, transparent var(--vignette-strength), black 150%);
-            transition: all 0.3s ease;
+            display: none;
         }
 
         .header {
@@ -51,65 +93,52 @@
             position: absolute;
             top: 80px;
             left: 20px;
-            font-size: 1rem;
-            background: rgba(0, 0, 0, 0.8);
+            font-size: 0.9rem;
+            background: rgba(0, 0, 0, 0.85);
             padding: 15px;
             border-left: 3px solid var(--accent);
             z-index: 20;
+            min-width: 220px;
             box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
         }
 
+        .leaderboard {
+            margin-top: 15px;
+            border-top: 1px solid #333;
+            padding-top: 10px;
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+
+        /* Targets & Bubbles */
         .doodle-target {
             position: absolute;
             width: 70px;
             height: 70px;
             cursor: pointer;
             z-index: 5;
-            filter: drop-shadow(0 0 5px rgba(255,62,62,0.2));
             transition: transform 0.05s;
         }
-
-        .doodle-target:active { transform: scale(0.85); }
 
         .bubble {
             position: absolute;
             color: var(--accent);
             font-weight: bold;
-            font-size: 14px;
+            font-size: 13px;
             pointer-events: none;
             z-index: 100;
             text-shadow: 2px 2px #000;
-            max-width: 250px;
-            line-height: 1.4;
-            animation: slowFloat 4s ease-out forwards;
+            max-width: 220px;
+            animation: slowFloat 3s ease-out forwards;
         }
 
         @keyframes slowFloat {
-            0% { opacity: 0; transform: translateY(10px) skewX(10deg); }
-            10% { opacity: 1; transform: translateY(0) skewX(0deg); }
-            80% { opacity: 1; }
-            100% { opacity: 0; transform: translateY(-50px); }
+            0% { opacity: 0; transform: translateY(10px); }
+            15% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-40px); }
         }
 
-        /* Glitch Effect */
-        .heavy-stress { animation: screenShake 0.15s infinite; }
-        @keyframes screenShake {
-            0% { transform: translate(1px, 1px); }
-            25% { transform: translate(-2px, -1px); }
-            50% { transform: translate(-1px, 2px); }
-            75% { transform: translate(2px, 1px); }
-            100% { transform: translate(0, 0); }
-        }
-
-        #overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255, 0, 0, 0);
-            pointer-events: none;
-            z-index: 100;
-            transition: background 0.3s;
-        }
-
+        /* Popups */
         .islamic-popup {
             position: fixed;
             top: 50%; left: 50%;
@@ -124,92 +153,135 @@
             box-shadow: 0 0 100px rgba(0,0,0,0.9);
             font-family: 'Georgia', serif;
             max-width: 400px;
-            animation: etherealIn 0.8s ease-out;
         }
 
-        @keyframes etherealIn {
-            from { opacity: 0; transform: translate(-50%, -45%) scale(0.9); filter: blur(10px); }
-            to { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); }
+        #overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 100;
+            transition: background 0.3s;
         }
 
-        .oasis-btn {
-            background: #1b5e20; color: white; border: none;
-            padding: 12px 25px; margin-top: 20px;
-            cursor: pointer; font-family: 'Courier New';
-            text-transform: uppercase; letter-spacing: 2px;
+        .heavy-stress { animation: screenShake 0.1s infinite; }
+        @keyframes screenShake {
+            0% { transform: translate(2px, 1px); }
+            50% { transform: translate(-2px, -1px); }
+            100% { transform: translate(0, 0); }
         }
     </style>
 </head>
 <body>
 
+    <div id="start-screen">
+        <h1 style="margin-bottom: 30px;">IDENTIFIKASI ASET</h1>
+        <input type="text" id="player-name" class="input-box" placeholder="MASUKKAN NAMA..." maxlength="12">
+        <button class="btn-start" onclick="startGame()">Connect to Server</button>
+        <p style="color: #444; font-size: 10px; margin-top: 20px;">Data Anda akan disinkronkan ke database global.</p>
+    </div>
+
     <div id="overlay"></div>
 
-    <div class="header">
-        <h1 id="main-title">SLAVERY SIMULATOR</h1>
-        <div style="font-size: 10px; color: #444; letter-spacing: 2px;">EST. 2026 | HUMAN ASSET NO. 8402</div>
-    </div>
+    <div id="game-container">
+        <div class="header">
+            <h1 id="main-title">SLAVERY SIMULATOR</h1>
+            <div id="asset-id" style="font-size: 10px; color: #555; letter-spacing: 2px;"></div>
+        </div>
 
-    <div class="score-board">
-        Eksploitasi: <span id="score-val">0</span> Jam<br>
-        <span id="insult-text" style="color: #666; font-size: 11px; display: block; margin-top: 10px;">
-            Status: Disposable Asset
-        </span>
+        <div class="score-board">
+            Eksploitasi: <span id="score-val">0</span> Jam<br>
+            <span id="insult-text" style="color: #666; font-size: 11px;">Status: Disposable Asset</span>
+            
+            <div class="leaderboard">
+                <strong style="color: var(--accent)">MARTIR TERBAIK:</strong><br>
+                <div id="global-rank-list">Memuat data...</div>
+            </div>
+        </div>
     </div>
-
-    <div id="game-container"></div>
 
     <script>
+        // --- CONFIG SUPABASE ---
+        const SUPABASE_URL = 'https://ckzkqfajuhzytadsvolx.supabase.co'; 
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNremtxZmFqdWh6eXRhZHN2b2x4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwNTM0MjYsImV4cCI6MjA5MzYyOTQyNn0.FrwwcRHgxX-NbO3YvSs_7acVtlejKCNBvTFSQlilDJk';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         const container = document.getElementById('game-container');
         const scoreDisplay = document.getElementById('score-val');
         const insultDisplay = document.getElementById('insult-text');
         const overlay = document.getElementById('overlay');
         
         let score = 0;
+        let playerName = "";
+        let gameActive = false;
         let currentLevelThreshold = -1;
 
-        // Sound Engine
+        // Audio Engine
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playSound(freq, type, vol, duration) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = type;
             osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
             gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
             osc.connect(gain);
             gain.connect(audioCtx.destination);
             osc.start();
             osc.stop(audioCtx.currentTime + duration);
         }
 
-        const darkQuotes = [
-            "Gaji segini mau minta healing?", "Cicilanmu lebih setia daripada perusahaan.",
-            "Inflasi 10%, gajimu 0%.", "Tabunganmu cukup untuk 3 jam.",
-            "Bonus itu mitos, lembur itu pasti.", "Kamu tidak dibayar untuk punya perasaan.",
-            "Cuti itu memindahkan meja kerja ke rumah.", "Mati di meja kerja adalah KPI tertinggi.",
-            "Laptopmu adalah borgol modern.", "Tidur hanyalah kegagalan manajemen waktu.",
-            "Kita kan keluarga (yang beracun).", "Passionmu adalah bahan bakar eksploitasi kami.",
-            "Posisi kamu bisa diganti besok pagi.", "Kamu cuma angka di spreadsheet.",
-            "Namamu lebih murah dari tinta printer.", "Burnout hanyalah istilah untuk yang lemah.",
-            "Air mata tidak bisa di-convert jadi PDF.", "Dunia tetap berputar tanpa keberhasilanmu."
+        const statusLevels = [
+            { threshold: 100, text: "Status: Unpaid Martyr", msg: "Hasbunallah wanikmal wakil. Cukup Allah bagi kita." },
+            { threshold: 50, text: "Status: Corporate Hollow", msg: "Dunia ini sementara, akhirat selamanya." },
+            { threshold: 25, text: "Status: Burnout Denier", msg: "Innallaha ma'ashobirin. Allah bersama orang sabar." },
+            { threshold: 10, text: "Status: Cognitive Slave", msg: "Bismillah, niatkan lelahmu menjadi lillah." },
+            { threshold: 0, text: "Status: Disposable Asset", msg: "Niatkan kerja untuk ibadah." }
         ];
 
-        const statusLevels = [
-            { threshold: 100, text: "Status: Unpaid Martyr", msg: "Hasbunallah wanikmal wakil. Cukup Allah bagi kita, dan Dia sebaik-baik penolong." },
-            { threshold: 50, text: "Status: Corporate Hollow", msg: "Dunia ini sementara, akhirat selamanya. Jangan biarkan duniamu mematikan hatimu." },
-            { threshold: 25, text: "Status: Burnout Denier", msg: "Innallaha ma'ashobirin. Sesungguhnya Allah bersama orang-orang yang sabar." },
-            { threshold: 10, text: "Status: Cognitive Slave", msg: "Jangan lupa bismillah sebelum kerja, agar lelahmu menjadi lillah." },
-            { threshold: 0, text: "Status: Disposable Asset", msg: "Niatkan kerja untuk ibadah dan keluarga." }
-        ];
+        async function fetchLeaderboard() {
+            const { data, error } = await supabase
+                .from('leaderboard')
+                .select('name, score')
+                .order('score', { ascending: false })
+                .limit(5);
+            
+            if (!error) {
+                const listHtml = data.map((item, index) => 
+                    `${index + 1}. ${item.name.toUpperCase()} (${item.score}h)`
+                ).join('<br>');
+                document.getElementById('global-rank-list').innerHTML = listHtml;
+            }
+        }
+
+        async function syncData() {
+            if (!playerName) return;
+            await supabase
+                .from('leaderboard')
+                .upsert({ name: playerName, score: score }, { onConflict: 'name' });
+            fetchLeaderboard();
+        }
+
+        function startGame() {
+            const input = document.getElementById('player-name');
+            playerName = input.value.trim() || "ANONYMOUS";
+            document.getElementById('asset-id').innerText = `ASSET: ${playerName.toUpperCase()}`;
+            document.getElementById('start-screen').style.display = 'none';
+            container.style.display = 'block';
+            gameActive = true;
+            fetchLeaderboard();
+            setInterval(createTask, 1400);
+            setInterval(syncData, 10000); // Sync global tiap 10 detik
+        }
 
         function showIslamicOasis(message) {
+            gameActive = false;
             container.style.filter = "blur(15px)";
             const popup = document.createElement('div');
             popup.className = 'islamic-popup';
             popup.innerHTML = `
-                <h3 style="margin-top:0; color:#2e7d32; letter-spacing:1px;">Jeda Sejenak</h3>
-                <p style="line-height:1.6;">"${message}"</p>
-                <button class="oasis-btn" onclick="closeOasis(this)">Aamiin</button>
+                <h3 style="margin-top:0; color:#2e7d32;">Jeda Sejenak</h3>
+                <p>"${message}"</p>
+                <button onclick="closeOasis(this)" style="background:#1b5e20; color:white; border:none; padding:10px 20px; cursor:pointer;">Aamiin</button>
             `;
             document.body.appendChild(popup);
             playSound(440, 'sine', 0.05, 1.5);
@@ -218,6 +290,8 @@
         function closeOasis(btn) {
             container.style.filter = "none";
             btn.parentElement.remove();
+            gameActive = true;
+            syncData();
         }
 
         function updateStatus() {
@@ -234,66 +308,31 @@
         }
 
         function createTask() {
+            if (!gameActive) return;
             const task = document.createElement('div');
             task.className = 'doodle-target';
-            task.innerHTML = `
-                <svg viewBox="0 0 100 100">
-                    <rect x="20" y="15" width="60" height="70" fill="#111" stroke="#333" stroke-width="2"/>
-                    <line x1="35" y1="35" x2="65" y2="35" stroke="#ff3e3e" stroke-width="3"/>
-                    <line x1="35" y1="55" x2="55" y2="55" stroke="#333" stroke-width="2"/>
-                </svg>`;
-
+            task.innerHTML = `<svg viewBox="0 0 100 100"><rect x="20" y="15" width="60" height="70" fill="#111" stroke="#333" stroke-width="2"/><line x1="35" y1="35" x2="65" y2="35" stroke="#ff3e3e" stroke-width="3"/></svg>`;
+            
             const x = Math.random() * (window.innerWidth - 100);
-            const y = Math.random() * (window.innerHeight - 150) + 100;
-
-            task.style.left = x + 'px';
-            task.style.top = y + 'px';
+            const y = Math.random() * (window.innerHeight - 200) + 120;
+            task.style.left = x + 'px'; task.style.top = y + 'px';
 
             task.onclick = function() {
                 score++;
                 scoreDisplay.innerText = score;
-                playSound(200, 'square', 0.05, 0.1); // Click sound
-                
+                playSound(200, 'square', 0.05, 0.1);
                 updateStatus();
-
-                // Burnout Visuals
+                
                 overlay.style.backgroundColor = `rgba(255, 0, 0, ${Math.min(score/150, 0.6)})`;
-                document.documentElement.style.setProperty('--vignette-strength', `${Math.max(10, 40 - score/5)}%`);
-
-                // Heavy Stress Trigger
                 if (score % 50 === 0) {
                     container.classList.add('heavy-stress');
-                    playSound(60, 'sawtooth', 0.1, 1);
                     setTimeout(() => container.classList.remove('heavy-stress'), 2000);
                 }
-
-                showBubble(x, y);
                 this.remove();
-                
-                if (Math.random() > 0.1) createTask();
-                if (score > 30 && Math.random() > 0.4) createTask();
             };
-
             container.appendChild(task);
             setTimeout(() => { if(task.parentNode) task.remove(); }, 2500);
         }
-
-        function showBubble(x, y) {
-            const b = document.createElement('div');
-            b.className = 'bubble';
-            b.style.left = x + 'px';
-            b.style.top = y + 'px';
-            b.innerText = darkQuotes[Math.floor(Math.random() * darkQuotes.length)];
-            container.appendChild(b);
-            setTimeout(() => {
-                b.style.transition = "opacity 1s, filter 1s";
-                b.style.opacity = "0";
-                b.style.filter = "blur(10px)";
-                setTimeout(() => b.remove(), 1000);
-            }, 3000);
-        }
-
-        setInterval(createTask, 1400);
     </script>
 </body>
 </html>
