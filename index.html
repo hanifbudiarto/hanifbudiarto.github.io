@@ -241,6 +241,19 @@
 
     let trackingInterval = null;
 
+    function formatTime(seconds) {
+        if (seconds < 60) return `${seconds} SEC`;
+        
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes} MIN`;
+        
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours} HRS`;
+        
+        const days = Math.floor(hours / 24);
+        return `${days} DAYS`;
+    }
+
     async function fetchStats() {
         const { data, error } = await supabaseClient
             .from('game_stats')
@@ -254,10 +267,14 @@
         if (data.length > 0) {
             const topGame = data[0];
             const topName = topGame.game_key.replace(/_/g, ' ').toUpperCase();
+            
+            // Menggunakan formatTime untuk uptime
+            const formattedUptime = formatTime(topGame.total_hours_played);
+
             highlightContainer.innerHTML = `
                 <div style="font-size: 0.6rem; color: #555; margin-bottom: 4px;">MOST_ACTIVE_PROCESS:</div>
                 <span style="display: block; font-size: 0.8rem; color: #fff; text-shadow: 0 0 5px var(--neon-red);">${topName}</span>
-                <span style="font-size: 0.7rem; color: var(--neon-red); font-weight: bold;">UPTIME: ${topGame.total_hours_played.toLocaleString()} SEC</span>
+                <span style="font-size: 0.7rem; color: var(--neon-red); font-weight: bold;">UPTIME: ${formattedUptime}</span>
             `;
         }
 
@@ -265,7 +282,8 @@
         data.forEach(item => {
             const timeTag = document.querySelector(`.play-time-tag[data-key="${item.game_key}"]`);
             if (timeTag) {
-                timeTag.innerText = `${item.total_hours_played.toLocaleString()} SEC`;
+                // Menggunakan formatTime untuk label di setiap menu
+                timeTag.innerText = formatTime(item.total_hours_played);
             }
         });
     }
