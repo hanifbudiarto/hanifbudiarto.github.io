@@ -3,21 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Exploitation Hub | Game Launcher</title>
+    <title>TERMINAL | System Exploitation</title>
     <style>
         :root {
-            --dark-red: #4a0000;
-            --blood-red: #8b0000;
-            --bg-color: #050505;
+            --dark-red: #3d0000;
+            --blood-red: #af0000;
+            --neon-red: #ff3131;
+            --bg-color: #080808;
             --sidebar-bg: #0f0f0f;
-            --text-color: #d0d0d0;
-            --sidebar-width: 300px;
+            --text-color: #cccccc; /* Lebih terang agar terbaca */
+            --sidebar-width: 320px;
+        }
+
+        /* Scanline Overlay - CRITICAL FIX: pointer-events: none */
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            z-index: 9999;
+            background-size: 100% 3px, 2px 100%;
+            pointer-events: none; /* MEMUNGKINKAN KLIK TEMBUS */
         }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Consolas', 'Courier New', monospace;
             margin: 0;
             display: flex;
             height: 100vh;
@@ -28,22 +42,20 @@
         #sidebar {
             width: var(--sidebar-width);
             background-color: var(--sidebar-bg);
-            border-right: 2px solid #222;
+            border-right: 1px solid #222;
             display: flex;
             flex-direction: column;
-            padding: 20px;
-            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
-            transition: margin-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 30px 20px;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.9);
+            transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
             position: relative;
-            z-index: 10;
+            z-index: 100; /* Di bawah scanline tapi di atas main */
         }
 
-        /* State ketika sidebar disembunyikan */
         #sidebar.collapsed {
-            margin-left: calc(var(--sidebar-width) * -1 - 40px); /* 40px adalah padding */
+            margin-left: calc(var(--sidebar-width) * -1);
         }
 
-        /* Tombol Toggle */
         #toggle-btn {
             position: absolute;
             right: -40px;
@@ -51,70 +63,70 @@
             width: 40px;
             height: 40px;
             background: var(--sidebar-bg);
-            border: 2px solid #222;
+            border: 1px solid #222;
             border-left: none;
-            color: var(--blood-red);
+            color: var(--neon-red);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.5rem;
-            font-weight: bold;
-            border-radius: 0 5px 5px 0;
-            z-index: 11;
+            z-index: 101;
         }
 
         h1 {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: var(--blood-red);
             text-transform: uppercase;
-            letter-spacing: 2px;
-            border-bottom: 1px solid var(--dark-red);
+            letter-spacing: 3px;
             padding-bottom: 15px;
             margin-bottom: 30px;
             text-align: center;
+            border-bottom: 1px solid var(--dark-red);
+            text-shadow: 0 0 5px rgba(139, 0, 0, 0.5);
         }
 
         .game-option {
-            background: #1a1a1a;
-            border: 1px solid #333;
-            color: #aaa;
+            background: #141414;
+            border: 1px solid #252525;
+            color: #888;
             padding: 15px;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             cursor: pointer;
-            transition: all 0.3s;
-            text-align: left;
-            border-left: 5px solid transparent;
+            transition: 0.2s;
+            position: relative;
+            z-index: 102; /* Memastikan bisa diklik */
         }
 
         .game-option:hover {
-            background: #252525;
-            border-left: 5px solid var(--blood-red);
+            border-color: var(--blood-red);
             color: #fff;
+            background: #1a0000;
         }
 
         .game-option.active {
             background: var(--dark-red);
-            color: white;
-            border-left: 5px solid #ff0000;
+            border-color: var(--neon-red);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.2);
         }
 
         .game-title {
             font-weight: bold;
             display: block;
             margin-bottom: 5px;
+            letter-spacing: 1px;
         }
 
         .game-desc {
             font-size: 0.75rem;
             opacity: 0.7;
+            line-height: 1.3;
         }
 
-        /* Main Content Area */
+        /* Main Content */
         #main-content {
             flex-grow: 1;
-            display: flex;
-            flex-direction: column;
             position: relative;
             background: #000;
         }
@@ -123,6 +135,7 @@
             width: 100%;
             height: 100%;
             border: none;
+            display: block;
         }
 
         .welcome-screen {
@@ -131,13 +144,13 @@
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
-            width: 80%;
+            width: 100%;
         }
 
         .welcome-screen h2 {
-            color: #444;
-            font-size: 2rem;
-            letter-spacing: 5px;
+            color: #333;
+            font-size: 1.5rem;
+            letter-spacing: 8px;
         }
 
         .footer {
@@ -145,59 +158,52 @@
             font-size: 0.7rem;
             color: #444;
             text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #1a1a1a;
         }
     </style>
 </head>
 <body>
 
 <div id="sidebar">
-    <button id="toggle-btn" onclick="toggleSidebar()" title="Toggle Sidebar">≡</button>
+    <button id="toggle-btn" onclick="toggleSidebar()">≡</button>
     
-    <h1>System Exploitation v1.0</h1>
+    <h1>SYSTEM_EXPLOIT</h1>
     
     <div class="game-option" onclick="loadGame('corporate_slave.html', this)">
         <span class="game-title">Corporate Slave</span>
-        <span class="game-desc">Ketik sampai mati demi profit bos Anda.</span>
+        <span class="game-desc">Ketik sampai mati demi profit bos.</span>
     </div>
 
     <div class="game-option" onclick="loadGame('slavery_simulator.html', this)">
         <span class="game-title">Slavery Simulator</span>
-        <span class="game-desc">Simulasi manajemen sumber daya manusia yang kejam.</span>
+        <span class="game-desc">Kerja, kerja, kerja, mati.</span>
     </div>
 
     <div class="game-option" onclick="loadGame('vacation_lie.html', this)">
         <span class="game-title">The Vacation Is A Lie</span>
-        <span class="game-desc">Coba nikmati pantai sambil diteror chat kantor.</span>
+        <span class="game-desc">Diteror chat kantor saat liburan.</span>
     </div>
 
     <div class="game-option" onclick="loadGame('competence_trap.html', this)">
         <span class="game-title">The Competence Trap</span>
-        <span class="game-desc">Semakin rajin Anda, semakin menderita Anda.</span>
+        <span class="game-desc">Rajin = Tambah beban kerja.</span>
     </div>
 
     <div class="game-option" onclick="loadGame('quiet_quitter.html', this)">
         <span class="game-title">The Quiet Quitter</span>
-        <span class="game-desc">Seni mendapatkan gaji tanpa mengeluarkan tenaga.</span>
+        <span class="game-desc">Seni mencuri gaji buta.</span>
     </div>
 
-    <!-- Placeholder untuk Game 3 (Tinggal buka komen ini nanti) -->
-    <!-- 
-    <div class="game-option" onclick="loadGame('game_3.html', this)">
-        <span class="game-title">Game Baru (Segera)</span>
-        <span class="game-desc">Deskripsi game baru Anda.</span>
-    </div> 
-    -->
-
     <div class="footer">
-        &copy; 2024 Distopia Games <br>
-        "Work harder, you're replaceable."
+        STATUS: ONLINE <br>
+        &copy; 2026 DISTOPIA_CORP
     </div>
 </div>
 
 <div id="main-content">
     <div id="placeholder" class="welcome-screen">
-        <h2>PILIH MODUL EKSPLOITASI</h2>
-        <p>Gunakan sidebar untuk memuat unit simulasi.</p>
+        <h2>SELECT_MODULE_...</h2>
     </div>
     <iframe id="game-viewport" src="" style="display:none;"></iframe>
 </div>
@@ -205,15 +211,7 @@
 <script>
     function toggleSidebar() {
         const sidebar = document.getElementById('sidebar');
-        const toggleBtn = document.getElementById('toggle-btn');
         sidebar.classList.toggle('collapsed');
-        
-        // Ubah icon saat toggle
-        if (sidebar.classList.contains('collapsed')) {
-            toggleBtn.innerText = '»';
-        } else {
-            toggleBtn.innerText = '≡';
-        }
     }
 
     function loadGame(url, element) {
@@ -221,19 +219,14 @@
         const placeholder = document.getElementById('placeholder');
         const options = document.querySelectorAll('.game-option');
 
-        // Update UI Active State
         options.forEach(opt => opt.classList.remove('active'));
         element.classList.add('active');
 
-        // Load Game ke Iframe
         placeholder.style.display = 'none';
         iframe.style.display = 'block';
         iframe.src = url;
 
-        // Opsional: Tutup sidebar otomatis di layar kecil setelah pilih game
-        if (window.innerWidth < 768) {
-            toggleSidebar();
-        }
+        if (window.innerWidth < 768) toggleSidebar();
     }
 </script>
 
