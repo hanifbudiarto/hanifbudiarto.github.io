@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV Bio-Processor</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --accent: #ff3e3e;
+            --text: #e0e0e0;
+            --card-bg: #111;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Header Statis */
+        .status-bar {
+            position: absolute;
+            top: 20px;
+            width: 90%;
+            display: flex;
+            justify-content: space-between;
+            border: 1px solid #333;
+            padding: 10px;
+            background: rgba(255,0,0,0.05);
+        }
+
+        /* Kartu CV */
+        #cv-card {
+            width: 300px;
+            height: 400px;
+            background: var(--card-bg);
+            border: 2px solid #333;
+            padding: 20px;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,1);
+            transition: transform 0.2s, opacity 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .cv-id { font-size: 0.7rem; color: #555; }
+        .stat-row { border-bottom: 1px solid #222; padding: 5px 0; }
+        .label { font-size: 0.8rem; color: #888; display: block; }
+        .value { font-size: 1.2rem; font-weight: bold; color: var(--accent); }
+
+        /* Instruksi Dinamis */
+        #instruction {
+            color: #fff;
+            background: #300;
+            padding: 5px 15px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            border-left: 5px solid var(--accent);
+        }
+
+        /* Kontrol */
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-family: 'Courier New';
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            text-transform: uppercase;
+        }
+
+        .btn-reject { background: #444; color: white; }
+        .btn-accept { background: var(--accent); color: white; }
+
+        button:active { transform: scale(0.9); }
+
+        .game-over {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="status-bar">
+        <span>PROCESSED: <span id="score">0</span></span>
+        <span>EFFICIENCY: <span id="efficiency">100</span>%</span>
+    </div>
+
+    <div id="instruction">Kriteria: Gaji di bawah 8jt</div>
+
+    <div id="cv-card">
+        <span class="cv-id">ASSET_UID: <span id="uid">#8271</span></span>
+        <div class="stat-row">
+            <span class="label">IPK</span>
+            <span class="value" id="stat-gpa">3.85</span>
+        </div>
+        <div class="stat-row">
+            <span class="label">PENGALAMAN</span>
+            <span class="value" id="stat-exp">4 THN</span>
+        </div>
+        <div class="stat-row">
+            <span class="label">EXPECTED SALARY</span>
+            <span class="value" id="stat-sal">12.000.000</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-reject" onclick="process(false)">[A] REJECT</button>
+        <button class="btn-accept" onclick="process(true)">[D] ACCEPT</button>
+    </div>
+
+    <div id="game-over" class="game-over">
+        <h1 style="color:var(--accent)">SYSTEM FAILURE</h1>
+        <p>Efisiensi Anda terlalu rendah. Anda dipecat.</p>
+        <button onclick="location.reload()" style="background:#fff">REBOOT SYSTEM</button>
+    </div>
+
+    <script>
+        let score = 0;
+        let efficiency = 100;
+        let currentTarget = {};
+        let criteria = "salary"; // salary, gpa, or exp
+
+        const criteriaList = [
+            { type: "salary", text: "Gaji di bawah 8jt", check: (cv) => cv.sal <= 8 },
+            { type: "gpa", text: "IPK di atas 3.5", check: (cv) => cv.gpa >= 3.5 },
+            { type: "exp", text: "Pengalaman di atas 2 thn", check: (cv) => cv.exp >= 2 }
+        ];
+        
+        let currentCriteria = criteriaList[0];
+
+        function generateCV() {
+            currentTarget = {
+                uid: Math.floor(Math.random() * 9000) + 1000,
+                gpa: (Math.random() * (4.0 - 2.0) + 2.0).toFixed(2),
+                exp: Math.floor(Math.random() * 10),
+                sal: Math.floor(Math.random() * 15) + 3
+            };
+
+            document.getElementById('uid').innerText = "#" + currentTarget.uid;
+            document.getElementById('stat-gpa').innerText = currentTarget.gpa;
+            document.getElementById('stat-exp').innerText = currentTarget.exp + " THN";
+            document.getElementById('stat-sal').innerText = currentTarget.sal + ".000.000";
+            
+            // Randomly change criteria every 5 CVs
+            if (score % 5 === 0 && score > 0) {
+                currentCriteria = criteriaList[Math.floor(Math.random() * criteriaList.length)];
+                document.getElementById('instruction').innerText = "Kriteria: " + currentCriteria.text;
+            }
+        }
+
+        function process(choice) {
+            const isCorrect = currentCriteria.check(currentTarget) === choice;
+            
+            if (isCorrect) {
+                score++;
+                document.getElementById('score').innerText = score;
+            } else {
+                efficiency -= 10;
+                document.getElementById('efficiency').innerText = efficiency;
+                if (efficiency <= 0) {
+                    document.getElementById('game-over').style.display = 'flex';
+                }
+            }
+
+            const card = document.getElementById('cv-card');
+            card.style.transform = choice ? 'translateX(200px) rotate(20deg)' : 'translateX(-200px) rotate(-20deg)';
+            card.style.opacity = '0';
+
+            setTimeout(() => {
+                card.style.transform = 'none';
+                card.style.opacity = '1';
+                generateCV();
+            }, 200);
+        }
+
+        // Support keyboard
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'a' || e.key === 'A') process(false);
+            if (e.key === 'd' || e.key === 'D') process(true);
+        });
+
+        generateCV();
+    </script>
+</body>
+</html>
