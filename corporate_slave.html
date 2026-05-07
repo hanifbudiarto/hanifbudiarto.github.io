@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Grind: Blood & Profit</title>
+    <style>
+        :root {
+            --blood: #8b0000;
+            --dark-void: #050505;
+        }
+
+        body {
+            background-color: var(--dark-void);
+            color: #e0e0e0;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            transition: box-shadow 0.5s;
+        }
+
+        /* Efek Vignette Berdarah */
+        #vignette {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            box-shadow: inset 0 0 100px rgba(139, 0, 0, 0);
+            z-index: 5;
+            transition: box-shadow 0.3s;
+        }
+
+        #game-container {
+            text-align: center;
+            width: 80%;
+            max-width: 600px;
+            z-index: 2;
+        }
+
+        h1 {
+            color: var(--blood);
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+            text-shadow: 2px 2px 5px black;
+            animation: flicker 3s infinite;
+        }
+
+        @keyframes flicker {
+            0%, 18%, 22%, 25%, 53%, 57%, 100% { opacity: 1; }
+            20%, 24%, 55% { opacity: 0.3; }
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            font-size: 1.2rem;
+        }
+
+        .stat-box {
+            padding: 10px;
+            border: 1px solid #444;
+            background: rgba(0,0,0,0.5);
+            min-width: 150px;
+            box-shadow: 0 0 10px rgba(0,0,0,1);
+        }
+
+        #profit-display { color: #00ff00; font-weight: bold; }
+        #blood-display { color: #ff0000; font-weight: bold; }
+
+        #visual-area {
+            height: 250px;
+            border: 2px solid #222;
+            position: relative;
+            background: #000;
+            margin: 20px 0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 50px #8b000033;
+        }
+
+        .worker {
+            font-size: 4rem;
+            transition: transform 0.05s;
+            filter: drop-shadow(0 0 10px rgba(139,0,0,0.5));
+        }
+
+        /* Percikan Darah */
+        .blood-splat {
+            position: absolute;
+            background: radial-gradient(circle, #8b0000 20%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: splatFade 0.8s forwards;
+        }
+
+        @keyframes splatFade {
+            0% { transform: scale(0.1); opacity: 1; }
+            100% { transform: scale(3); opacity: 0; }
+        }
+
+        /* Darah Menetes */
+        .drip {
+            position: absolute;
+            top: -20px;
+            width: 2px;
+            height: 20px;
+            background: var(--blood);
+            animation: dripDown 2s linear forwards;
+        }
+
+        @keyframes dripDown {
+            to { transform: translateY(110vh); }
+        }
+
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, #2a0000, #000);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        button {
+            background: var(--blood);
+            color: white;
+            border: 1px solid #f00;
+            padding: 15px 30px;
+            font-family: 'Courier New';
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover { background: #ff0000; box-shadow: 0 0 20px #f00; }
+        
+        .hint { font-size: 0.8rem; color: #444; margin-top: 40px; }
+    </style>
+</head>
+<body id="body">
+
+<div id="vignette"></div>
+
+<div id="game-container">
+    <h1>REPLACEMENT FOUND?</h1>
+    <p class="message" id="msg">Budak baru telah tiba...</p>
+    
+    <div class="stats">
+        <div class="stat-box">PROFIT BOS: <br><span id="profit-display">$0</span></div>
+        <div class="stat-box">SISA HIDUP: <br><span id="blood-display">100%</span></div>
+    </div>
+
+    <div id="visual-area">
+        <div class="worker" id="worker">👨‍💻</div>
+    </div>
+
+    <p style="font-size: 0.9rem; color: #888;">Tekan tombol apapun untuk memeras keringat.</p>
+    <p class="hint">SPASI: Berobat (Bayar 50% Gaji Anda)</p>
+</div>
+
+<div id="overlay">
+    <h1 id="death-msg">KARYAWAN RUSAK</h1>
+    <p id="final-score" style="font-size: 1.5rem;">Profit Terakhir: $0</p>
+    <p style="color: #666; margin-bottom: 30px;">"Terima kasih atas organ tubuhnya."</p>
+    <button onclick="resetGame()">REKRUT TUMBAL BARU</button>
+</div>
+
+<script>
+    let profit = 0;
+    let blood = 100;
+    let isGameOver = false;
+
+    const body = document.getElementById('body');
+    const vignette = document.getElementById('vignette');
+    const profitEl = document.getElementById('profit-display');
+    const bloodEl = document.getElementById('blood-display');
+    const workerEl = document.getElementById('worker');
+    const visualArea = document.getElementById('visual-area');
+    const msgEl = document.getElementById('msg');
+    const overlay = document.getElementById('overlay');
+
+    const quotes = [
+        "JANGAN BERHENTI.", "Keluargamu butuh uang.", 
+        "Bos ingin mobil baru.", "Anda hanya angka.", 
+        "Darah adalah pelumas mesin.", "Lembur adalah kemuliaan."
+    ];
+
+    window.addEventListener('keydown', (e) => {
+        if (isGameOver) return;
+
+        // Screen Shake Effect
+        body.style.transform = `translate(${Math.random()*4-2}px, ${Math.random()*4-2}px)`;
+        setTimeout(() => body.style.transform = 'translate(0,0)', 50);
+
+        if (e.code === 'Space') {
+            if (profit > 10) {
+                blood = Math.min(100, blood + 15);
+                profit = Math.floor(profit * 0.5);
+                msgEl.innerText = "Suntikan morfin disuntikkan...";
+                updateDisplay();
+            }
+            return;
+        }
+
+        // Kerja Paksa
+        profit += 10;
+        blood -= 1.2;
+        
+        workerEl.style.transform = `scale(1.2) rotate(${Math.random()*20-10}deg)`;
+        setTimeout(() => workerEl.style.transform = 'scale(1)', 50);
+        
+        spawnBlood();
+        if (Math.random() > 0.9) spawnDrip();
+        
+        if (Math.random() > 0.92) {
+            msgEl.innerText = quotes[Math.floor(Math.random() * quotes.length)];
+            msgEl.style.color = "#ff0000";
+            setTimeout(() => msgEl.style.color = "#666", 500);
+        }
+
+        if (blood <= 0) endGame();
+        updateDisplay();
+    });
+
+    function spawnBlood() {
+        const splat = document.createElement('div');
+        splat.className = 'blood-splat';
+        const size = Math.random() * 40 + 20;
+        splat.style.width = size + 'px';
+        splat.style.height = size + 'px';
+        splat.style.left = (Math.random() * 90) + '%';
+        splat.style.top = (Math.random() * 90) + '%';
+        visualArea.appendChild(splat);
+        setTimeout(() => splat.remove(), 800);
+    }
+
+    function spawnDrip() {
+        const drip = document.createElement('div');
+        drip.className = 'drip';
+        drip.style.left = Math.random() * 100 + 'vw';
+        document.body.appendChild(drip);
+        setTimeout(() => drip.remove(), 2000);
+    }
+
+    function updateDisplay() {
+        profitEl.innerText = `$${profit}`;
+        bloodEl.innerText = `${Math.max(0, Math.ceil(blood))}%`;
+        
+        // Update Vignette Intensitas
+        const intensity = (100 - blood);
+        vignette.style.boxShadow = `inset 0 0 ${intensity * 2}px rgba(139, 0, 0, ${intensity/100})`;
+
+        if (blood < 30) {
+            workerEl.innerText = "💀";
+            document.body.style.animation = "flicker 0.2s infinite";
+        } else if (blood < 60) {
+            workerEl.innerText = "🤮";
+            document.body.style.animation = "none";
+        } else {
+            workerEl.innerText = "👨‍💻";
+        }
+    }
+
+    function endGame() {
+        isGameOver = true;
+        overlay.style.display = 'flex';
+        document.getElementById('final-score').innerText = `Profit Untuk Perusahaan: $${profit}`;
+    }
+
+    function resetGame() {
+        profit = 0;
+        blood = 100;
+        isGameOver = false;
+        overlay.style.display = 'none';
+        document.body.style.animation = "none";
+        msgEl.innerText = "Selamat datang kembali, aset nomor #402.";
+        updateDisplay();
+    }
+</script>
+
+</body>
+</html>

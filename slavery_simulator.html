@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corporate Slavery Simulator 2026</title>
+    <!-- Library Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --accent: #ff3e3e;
+            --text-main: #e0e0e0;
+            --vignette-strength: 40%;
+            --blood: #8a0303;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            overflow: hidden;
+            color: var(--text-main);
+            transition: filter 0.5s ease;
+        }
+
+        /* --- JUDUL BERDARAH --- */
+        .bloody-title {
+            color: var(--accent);
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            text-align: center;
+            margin: 0 0 20px 0;
+            letter-spacing: 5px;
+            text-shadow: 
+                2px 2px 0px #300,
+                0 0 10px var(--blood),
+                0 0 20px var(--blood);
+            animation: drip 2s infinite alternate;
+        }
+
+        @keyframes drip {
+            from { text-shadow: 0 0 10px var(--blood), 0 0 20px var(--blood); }
+            to { text-shadow: 0 10px 30px var(--blood), 0 5px 15px #f00; transform: scale(1.02); }
+        }
+
+        /* Layar Awal (Input Nama & Leaderboard) */
+        #login-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, #1a0000 0%, #000 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .leaderboard-front {
+            margin-top: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border: 1px solid #300;
+            width: 320px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(138, 3, 3, 0.2);
+        }
+
+        .leaderboard-front h3 {
+            color: #888;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #300;
+            padding-bottom: 5px;
+            letter-spacing: 2px;
+        }
+
+        .rank-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin: 8px 0;
+            color: #bbb;
+        }
+
+        .rank-item.top { color: var(--accent); font-weight: bold; text-shadow: 0 0 5px var(--blood); }
+
+        .input-nama {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid var(--blood);
+            color: white;
+            padding: 10px;
+            font-family: 'Courier New';
+            text-align: center;
+            margin-bottom: 20px;
+            outline: none;
+            width: 250px;
+            font-size: 1.2rem;
+        }
+
+        .btn-start {
+            background: var(--blood);
+            color: white;
+            border: none;
+            padding: 12px 40px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            transition: 0.3s;
+        }
+
+        .btn-start:hover { background: var(--accent); box-shadow: 0 0 20px var(--accent); }
+
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background: radial-gradient(circle, transparent var(--vignette-strength), black 150%);
+            transition: all 0.3s ease;
+            display: none;
+        }
+
+        .header {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        h1.game-title {
+            font-size: 1.5rem;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            margin: 0;
+            color: var(--accent);
+            text-shadow: 0 0 10px rgba(255, 62, 62, 0.7);
+        }
+
+        .score-board {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            font-size: 1rem;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-left: 3px solid var(--accent);
+            z-index: 20;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+        }
+
+        .doodle-target {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            cursor: pointer;
+            z-index: 5;
+            filter: drop-shadow(0 0 5px rgba(255,62,62,0.2));
+            transition: transform 0.05s;
+        }
+
+        .doodle-target:active { transform: scale(0.85); }
+
+        .bubble {
+            position: absolute;
+            color: var(--accent);
+            font-weight: bold;
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 100;
+            text-shadow: 2px 2px #000;
+            max-width: 250px;
+            line-height: 1.4;
+            animation: slowFloat 4s ease-out forwards;
+        }
+
+        @keyframes slowFloat {
+            0% { opacity: 0; transform: translateY(10px) skewX(10deg); }
+            10% { opacity: 1; transform: translateY(0) skewX(0deg); }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-50px); }
+        }
+
+        .heavy-stress { animation: screenShake 0.15s infinite; }
+        @keyframes screenShake {
+            0% { transform: translate(1px, 1px); }
+            25% { transform: translate(-2px, -1px); }
+            50% { transform: translate(-1px, 2px); }
+            75% { transform: translate(2px, 1px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        #overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 0, 0, 0);
+            pointer-events: none;
+            z-index: 100;
+            transition: background 0.3s;
+        }
+
+        .islamic-popup {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.98);
+            color: #1b5e20;
+            padding: 30px;
+            border-radius: 5px;
+            border-top: 10px solid #4caf50;
+            text-align: center;
+            z-index: 1000;
+            box-shadow: 0 0 100px rgba(0,0,0,0.9);
+            font-family: 'Georgia', serif;
+            max-width: 400px;
+            animation: etherealIn 0.8s ease-out;
+        }
+
+        .oasis-btn {
+            background: #1b5e20; color: white; border: none;
+            padding: 12px 25px; margin-top: 20px;
+            cursor: pointer; font-family: 'Courier New';
+            text-transform: uppercase; letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Layar Login -->
+    <div id="login-screen">
+        <h1 class="bloody-title">HUMAN ASSET<br>IDENTIFICATION</h1>
+        <input type="text" id="user-name" class="input-nama" placeholder="NAMA BUDAK..." maxlength="15">
+        <button class="btn-start" onclick="initGame()">Login</button>
+
+        <div class="leaderboard-front">
+            <h3>KORBAN TERBAIK</h3>
+            <div id="full-leaderboard">Mencari data penderitaan...</div>
+        </div>
+    </div>
+
+    <div id="overlay"></div>
+
+    <div id="game-container">
+        <div class="header">
+            <h1 class="game-title">SLAVERY SIMULATOR</h1>
+            <div id="asset-info" style="font-size: 10px; color: #444; letter-spacing: 2px;">EST. 2026 | HUMAN ASSET</div>
+        </div>
+
+        <div class="score-board">
+            Eksploitasi: <span id="score-val">0</span> Jam<br>
+            <span id="insult-text" style="color: #666; font-size: 11px; display: block; margin-top: 10px;">
+                Status: Disposable Asset
+            </span>
+            <div id="rank-display" style="margin-top: 10px; font-size: 10px; color: #888; border-top: 1px solid #333; padding-top: 5px;">
+                Sinkronisasi...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- KONFIGURASI SUPABASE ---
+        const SUPABASE_URL = 'https://ckzkqfajuhzytadsvolx.supabase.co'; 
+        const SUPABASE_KEY = 'sb_publishable_NHtZJ5wg8v5A72g444QQpg_Mm3F2gyj';
+        const dbClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const container = document.getElementById('game-container');
+        const scoreDisplay = document.getElementById('score-val');
+        const insultDisplay = document.getElementById('insult-text');
+        const overlay = document.getElementById('overlay');
+        
+        let score = 0;
+        let currentLevelThreshold = -1;
+        let playerName = "";
+        let isOasisActive = false;
+
+        // Muat leaderboard saat pertama kali buka
+        window.onload = loadFullLeaderboard;
+
+        async function loadFullLeaderboard() {
+            const { data } = await dbClient
+                .from('leaderboard')
+                .select('name, score')
+                .order('score', { ascending: false })
+                .limit(5);
+            
+            const board = document.getElementById('full-leaderboard');
+            if (data && data.length > 0) {
+                board.innerHTML = data.map((u, i) => `
+                    <div class="rank-item ${i === 0 ? 'top' : ''}">
+                        <span>${i+1}. ${u.name}</span>
+                        <span>${u.score}h</span>
+                    </div>
+                `).join('');
+            } else {
+                board.innerText = "Belum ada aset yang terdaftar.";
+            }
+        }
+
+        async function syncToSupabase() {
+            if (!playerName || isOasisActive) return;
+            const { error } = await dbClient
+                .from('leaderboard')
+                .upsert({ name: playerName, score: score }, { onConflict: 'name' });
+            
+            if (!error) loadLeaderboard();
+        }
+
+        async function loadLeaderboard() {
+            const { data } = await dbClient
+                .from('leaderboard')
+                .select('name, score')
+                .order('score', { ascending: false })
+                .limit(3);
+            
+            if (data) {
+                const list = data.map(u => `${u.name}: ${u.score}h`).join(' | ');
+                document.getElementById('rank-display').innerText = "TOP: " + list;
+            }
+        }
+
+        function initGame() {
+            const input = document.getElementById('user-name');
+            if (input.value.trim() === "") return alert("Identitas diperlukan untuk eksploitasi!");
+            playerName = input.value.trim().toUpperCase();
+            
+            document.getElementById('asset-info').innerText = `EST. 2026 | ASSET: ${playerName}`;
+            document.getElementById('login-screen').style.display = 'none';
+            container.style.display = 'block';
+            
+            loadLeaderboard();
+            setInterval(createTask, 1400);
+            setInterval(syncToSupabase, 10000);
+        }
+
+        // --- LOGIKA GAME ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(freq, type, vol, duration) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        const darkQuotes = [
+            "Gaji segini mau minta healing?", "Cicilanmu lebih setia daripada perusahaan.",
+            "Inflasi 10%, gajimu 0%.", "Tabunganmu cukup untuk 3 jam.",
+            "Bonus itu mitos, lembur itu pasti.", "Kamu tidak dibayar untuk punya perasaan.",
+            "Cuti itu memindahkan meja kerja ke rumah.", "Mati di meja kerja adalah KPI tertinggi.",
+            "Laptopmu adalah borgol modern.", "Tidur hanyalah kegagalan manajemen waktu.",
+            "Passionmu adalah bahan bakar eksploitasi kami.", "Kamu cuma angka di spreadsheet."
+        ];
+
+        const statusLevels = [
+            { threshold: 100, text: "Status: Unpaid Martyr", msg: "Hasbunallah wanikmal wakil. Cukup Allah bagi kita." },
+            { threshold: 50, text: "Status: Corporate Hollow", msg: "Dunia ini sementara, akhirat selamanya." },
+            { threshold: 0, text: "Status: Disposable Asset", msg: "Niatkan kerja untuk ibadah dan keluarga." }
+        ];
+
+        function showIslamicOasis(message) {
+            isOasisActive = true;
+            container.style.filter = "blur(15px)";
+            const popup = document.createElement('div');
+            popup.className = 'islamic-popup';
+            popup.innerHTML = `
+                <h3 style="margin-top:0; color:#2e7d32; letter-spacing:1px;">Jeda Sejenak</h3>
+                <p style="line-height:1.6;">"${message}"</p>
+                <button class="oasis-btn" onclick="closeOasis(this)">Aamiin</button>
+            `;
+            document.body.appendChild(popup);
+            playSound(440, 'sine', 0.05, 1.5);
+        }
+
+        function closeOasis(btn) {
+            container.style.filter = "none";
+            btn.parentElement.remove();
+            isOasisActive = false;
+            syncToSupabase();
+        }
+
+        function updateStatus() {
+            for (let i = 0; i < statusLevels.length; i++) {
+                if (score >= statusLevels[i].threshold) {
+                    if (currentLevelThreshold !== statusLevels[i].threshold) {
+                        currentLevelThreshold = statusLevels[i].threshold;
+                        showIslamicOasis(statusLevels[i].msg);
+                    }
+                    insultDisplay.innerText = statusLevels[i].text;
+                    break;
+                }
+            }
+        }
+
+        function createTask() {
+            if(isOasisActive) return;
+            const task = document.createElement('div');
+            task.className = 'doodle-target';
+            task.innerHTML = `<svg viewBox="0 0 100 100"><rect x="20" y="15" width="60" height="70" fill="#111" stroke="#333" stroke-width="2"/><line x1="35" y1="35" x2="65" y2="35" stroke="#ff3e3e" stroke-width="3"/></svg>`;
+
+            const x = Math.random() * (window.innerWidth - 100);
+            const y = Math.random() * (window.innerHeight - 150) + 100;
+            task.style.left = x + 'px';
+            task.style.top = y + 'px';
+
+            task.onclick = function() {
+                score++;
+                scoreDisplay.innerText = score;
+                playSound(200, 'square', 0.05, 0.1);
+                updateStatus();
+                overlay.style.backgroundColor = `rgba(255, 0, 0, ${Math.min(score/150, 0.6)})`;
+                if (score % 50 === 0) {
+                    container.classList.add('heavy-stress');
+                    setTimeout(() => container.classList.remove('heavy-stress'), 2000);
+                }
+                showBubble(x, y);
+                this.remove();
+                if (Math.random() > 0.1) createTask();
+            };
+            container.appendChild(task);
+            setTimeout(() => { if(task.parentNode) task.remove(); }, 2500);
+        }
+
+        function showBubble(x, y) {
+            const b = document.createElement('div');
+            b.className = 'bubble';
+            b.style.left = x + 'px';
+            b.style.top = y + 'px';
+            b.innerText = darkQuotes[Math.floor(Math.random() * darkQuotes.length)];
+            container.appendChild(b);
+            setTimeout(() => b.remove(), 3000);
+        }
+    </script>
+</body>
+</html>
