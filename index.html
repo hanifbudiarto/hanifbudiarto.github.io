@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TERMINAL | System Exploitation</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --dark-red: #3d0000;
@@ -11,11 +12,10 @@
             --neon-red: #ff3131;
             --bg-color: #080808;
             --sidebar-bg: #0f0f0f;
-            --text-color: #cccccc; /* Lebih terang agar terbaca */
+            --text-color: #cccccc;
             --sidebar-width: 320px;
         }
 
-        /* Scanline Overlay - CRITICAL FIX: pointer-events: none */
         body::before {
             content: " ";
             display: block;
@@ -25,7 +25,7 @@
                         linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
             z-index: 9999;
             background-size: 100% 3px, 2px 100%;
-            pointer-events: none; /* MEMUNGKINKAN KLIK TEMBUS */
+            pointer-events: none;
         }
 
         body {
@@ -38,7 +38,6 @@
             overflow: hidden;
         }
 
-        /* Sidebar Styling */
         #sidebar {
             width: var(--sidebar-width);
             background-color: var(--sidebar-bg);
@@ -49,7 +48,7 @@
             box-shadow: 10px 0 30px rgba(0,0,0,0.9);
             transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
             position: relative;
-            z-index: 100; /* Di bawah scanline tapi di atas main */
+            z-index: 100;
         }
 
         #sidebar.collapsed {
@@ -86,6 +85,36 @@
             text-shadow: 0 0 5px rgba(139, 0, 0, 0.5);
         }
 
+        .most-played-section {
+            margin-top: 10px;
+            padding-bottom: 15px;
+            border-bottom: 1px double #333;
+        }
+
+        .stat-header {
+            font-size: 0.65rem;
+            color: #555;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        #highlight-game {
+            background: linear-gradient(90deg, #1a0000 0%, #080808 100%);
+            padding: 12px;
+            border-left: 3px solid var(--neon-red);
+        }
+
+        #game-options-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-top: 20px;
+            padding-right: 5px;
+        }
+
+        #game-options-container::-webkit-scrollbar { width: 3px; }
+        #game-options-container::-webkit-scrollbar-thumb { background: var(--dark-red); }
+
         .game-option {
             background: #141414;
             border: 1px solid #252525;
@@ -95,7 +124,18 @@
             cursor: pointer;
             transition: 0.2s;
             position: relative;
-            z-index: 102; /* Memastikan bisa diklik */
+        }
+
+        .play-time-tag {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.6rem;
+            color: var(--neon-red);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 2px 5px;
+            border: 1px solid var(--dark-red);
+            pointer-events: none;
         }
 
         .game-option:hover {
@@ -111,56 +151,22 @@
             box-shadow: 0 0 15px rgba(255, 0, 0, 0.2);
         }
 
-        .game-title {
-            font-weight: bold;
-            display: block;
-            margin-bottom: 5px;
-            letter-spacing: 1px;
-        }
+        .game-title { font-weight: bold; display: block; margin-bottom: 5px; letter-spacing: 1px; }
+        .game-desc { font-size: 0.75rem; opacity: 0.7; line-height: 1.3; }
 
-        .game-desc {
-            font-size: 0.75rem;
-            opacity: 0.7;
-            line-height: 1.3;
-        }
-
-        /* Main Content */
-        #main-content {
-            flex-grow: 1;
-            position: relative;
-            background: #000;
-        }
-
-        #game-viewport {
-            width: 100%;
-            height: 100%;
-            border: none;
-            display: block;
-        }
+        #main-content { flex-grow: 1; position: relative; background: #000; }
+        #game-viewport { width: 100%; height: 100%; border: none; display: block; }
 
         .welcome-screen {
             position: absolute;
-            top: 50%;
-            left: 50%;
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
             width: 100%;
         }
 
-        .welcome-screen h2 {
-            color: #333;
-            font-size: 1.5rem;
-            letter-spacing: 8px;
-        }
-
-        .footer {
-            margin-top: auto;
-            font-size: 0.7rem;
-            color: #444;
-            text-align: center;
-            padding-top: 20px;
-            border-top: 1px solid #1a1a1a;
-        }
+        .welcome-screen h2 { color: #333; font-size: 1.5rem; letter-spacing: 8px; }
+        .footer { margin-top: auto; font-size: 0.7rem; color: #444; text-align: center; padding-top: 20px; border-top: 1px solid #1a1a1a; }
     </style>
 </head>
 <body>
@@ -169,37 +175,52 @@
     <button id="toggle-btn" onclick="toggleSidebar()">≡</button>
     
     <h1>SYSTEM_EXPLOIT</h1>
+
+    <div class="most-played-section">
+        <span class="stat-header">TOP_EXPLOITATION_MODULE</span>
+        <div id="highlight-game">
+            <div style="font-size: 0.6rem; color: #555;">AWAITING_DATA...</div>
+        </div>
+    </div>
+
+    <div id="game-options-container">
+        <div class="game-option" data-key="corporate_slave" onclick="loadGame('corporate_slave.html', this)">
+            <span class="game-title">Corporate Slave</span>
+            <span class="game-desc">Ketik sampai mati demi profit bos.</span>
+            <div class="play-time-tag" data-key="corporate_slave">0S</div>
+        </div>
+
+        <div class="game-option" data-key="slavery_simulator" onclick="loadGame('slavery_simulator.html', this)">
+            <span class="game-title">Slavery Simulator</span>
+            <span class="game-desc">Kerja, kerja, kerja, mati.</span>
+            <div class="play-time-tag" data-key="slavery_simulator">0S</div>
+        </div>
+
+        <div class="game-option" data-key="vacation_lie" onclick="loadGame('vacation_lie.html', this)">
+            <span class="game-title">The Vacation Is A Lie</span>
+            <span class="game-desc">Diteror chat kantor saat liburan.</span>
+            <div class="play-time-tag" data-key="vacation_lie">0S</div>
+        </div>
+
+        <div class="game-option" data-key="competence_trap" onclick="loadGame('competence_trap.html', this)">
+            <span class="game-title">The Competence Trap</span>
+            <span class="game-desc">Rajin = Tambah beban kerja.</span>
+            <div class="play-time-tag" data-key="competence_trap">0S</div>
+        </div>
+
+        <div class="game-option" data-key="quiet_quitter" onclick="loadGame('quiet_quitter.html', this)">
+            <span class="game-title">The Quiet Quitter</span>
+            <span class="game-desc">Seni mencuri gaji buta.</span>
+            <div class="play-time-tag" data-key="quiet_quitter">0S</div>
+        </div>
+
+        <div class="game-option" data-key="cv_sorter" onclick="loadGame('cv_sorter.html', this)">
+            <span class="game-title">CV Sorter</span>
+            <span class="game-desc">Sortir angka, abaikan nyawa.</span>
+            <div class="play-time-tag" data-key="cv_sorter">0S</div>
+        </div>
+    </div>
     
-    <div class="game-option" onclick="loadGame('corporate_slave.html', this)">
-        <span class="game-title">Corporate Slave</span>
-        <span class="game-desc">Ketik sampai mati demi profit bos.</span>
-    </div>
-
-    <div class="game-option" onclick="loadGame('slavery_simulator.html', this)">
-        <span class="game-title">Slavery Simulator</span>
-        <span class="game-desc">Kerja, kerja, kerja, mati.</span>
-    </div>
-
-    <div class="game-option" onclick="loadGame('vacation_lie.html', this)">
-        <span class="game-title">The Vacation Is A Lie</span>
-        <span class="game-desc">Diteror chat kantor saat liburan.</span>
-    </div>
-
-    <div class="game-option" onclick="loadGame('competence_trap.html', this)">
-        <span class="game-title">The Competence Trap</span>
-        <span class="game-desc">Rajin = Tambah beban kerja.</span>
-    </div>
-
-    <div class="game-option" onclick="loadGame('quiet_quitter.html', this)">
-        <span class="game-title">The Quiet Quitter</span>
-        <span class="game-desc">Seni mencuri gaji buta.</span>
-    </div>
-
-    <div class="game-option" onclick="loadGame('cv_sorter.html', this)">
-        <span class="game-title">CV Sorter</span>
-        <span class="game-desc">Sortir angka, abaikan nyawa.</span>
-    </div>
-
     <div class="footer">
         STATUS: ONLINE <br>
         &copy; 2026 DISTOPIA_CORP
@@ -214,25 +235,77 @@
 </div>
 
 <script>
-    function toggleSidebar() {
-        const sidebar = document.getElementById('sidebar');
-        sidebar.classList.toggle('collapsed');
+    const SUPABASE_URL = 'https://ckzkqfajuhzytadsvolx.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_NHtZJ5wg8v5A72g444QQpg_Mm3F2gyj';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let trackingInterval = null;
+
+    async function fetchStats() {
+        const { data, error } = await supabaseClient
+            .from('game_stats')
+            .select('*')
+            .order('total_hours_played', { ascending: false });
+
+        if (error) return;
+
+        // 1. Highlight Top Game
+        const highlightContainer = document.getElementById('highlight-game');
+        if (data.length > 0) {
+            const topGame = data[0];
+            const topName = topGame.game_key.replace(/_/g, ' ').toUpperCase();
+            highlightContainer.innerHTML = `
+                <div style="font-size: 0.6rem; color: #555; margin-bottom: 4px;">MOST_ACTIVE_PROCESS:</div>
+                <span style="display: block; font-size: 0.8rem; color: #fff; text-shadow: 0 0 5px var(--neon-red);">${topName}</span>
+                <span style="font-size: 0.7rem; color: var(--neon-red); font-weight: bold;">UPTIME: ${topGame.total_hours_played.toLocaleString()} SEC</span>
+            `;
+        }
+
+        // 2. Update Tags in Menu
+        data.forEach(item => {
+            const timeTag = document.querySelector(`.play-time-tag[data-key="${item.game_key}"]`);
+            if (timeTag) {
+                timeTag.innerText = `${item.total_hours_played.toLocaleString()} SEC`;
+            }
+        });
+    }
+
+    async function updatePlayTime(gameKey, seconds) {
+        const { error } = await supabaseClient
+            .rpc('increment_game_seconds', { target_game_key: gameKey, amount: seconds });
+        
+        if (!error) fetchStats();
     }
 
     function loadGame(url, element) {
+        const gameKey = element.getAttribute('data-key');
         const iframe = document.getElementById('game-viewport');
         const placeholder = document.getElementById('placeholder');
-        const options = document.querySelectorAll('.game-option');
+        
+        // Reset Interval tracking
+        if (trackingInterval) clearInterval(trackingInterval);
 
-        options.forEach(opt => opt.classList.remove('active'));
+        // Update database setiap 10 detik saat sedang bermain
+        trackingInterval = setInterval(() => {
+            updatePlayTime(gameKey, 10);
+        }, 10000);
+
+        // UI Changes
+        document.querySelectorAll('.game-option').forEach(opt => opt.classList.remove('active'));
         element.classList.add('active');
-
         placeholder.style.display = 'none';
         iframe.style.display = 'block';
         iframe.src = url;
 
         if (window.innerWidth < 768) toggleSidebar();
     }
+
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('collapsed');
+    }
+
+    // Initial Load
+    fetchStats();
 </script>
 
 </body>
