@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Competence Trap: Burnout Edition</title>
+    <style>
+        :root {
+            --paper-white: #f0f0f0;
+            --boss-red: #8b0000;
+            --desk-brown: #3e2723;
+        }
+
+        body {
+            margin: 0;
+            background-color: #1a1a1a;
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            user-select: none; 
+            -webkit-user-select: none;
+        }
+
+        #ui-top {
+            width: 100%;
+            padding: 20px;
+            display: flex;
+            justify-content: space-around;
+            background: #000;
+            border-bottom: 3px solid var(--boss-red);
+            z-index: 10;
+        }
+
+        .stat-box { text-align: center; }
+        .stat-label { font-size: 0.7rem; color: #888; text-transform: uppercase; }
+        .stat-value { font-size: 1.5rem; font-weight: bold; display: block; }
+
+        #office-floor {
+            position: relative;
+            width: 100%;
+            flex-grow: 1;
+            background: linear-gradient(to bottom, #222, #111);
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        #player-desk {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 250px;
+            height: 120px;
+            background: var(--desk-brown);
+            border: 4px solid #1a0a00;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        #worker-avatar { font-size: 4rem; margin-bottom: 20px; transition: 0.1s; }
+
+        .task {
+            position: absolute;
+            width: 70px;
+            height: 90px;
+            background: var(--paper-white);
+            border: 2px solid #999;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+            color: #333;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            animation: fall linear forwards;
+            pointer-events: auto;
+        }
+
+        @keyframes fall {
+            from { transform: translateY(-120px) rotate(0deg); }
+            to { transform: translateY(110vh) rotate(15deg); }
+        }
+
+        #boss-comment {
+            position: fixed;
+            top: 120px;
+            right: 20px;
+            width: 220px;
+            background: var(--boss-red);
+            padding: 15px;
+            font-size: 0.85rem;
+            border-radius: 8px;
+            display: none;
+            z-index: 20;
+            box-shadow: 0 5px 15px rgba(0,0,0,1);
+        }
+
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 100;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        button {
+            padding: 15px 30px;
+            background: var(--boss-red);
+            color: white;
+            border: 2px solid #ff0000;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .deadline-warning {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 0, 0, 0.1);
+            pointer-events: none;
+            display: none;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+
+<div id="deadline-fx" class="deadline-warning"></div>
+
+<div id="ui-top">
+    <div class="stat-box">
+        <span class="stat-label">Output Kerja</span>
+        <span id="score" class="stat-value">0</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-label">LEVEL STRES</span>
+        <span id="stress" class="stat-value" style="color: #00ff00;">0%</span>
+    </div>
+</div>
+
+<div id="office-floor">
+    <div id="boss-comment"></div>
+    <div id="player-desk">
+        <div id="worker-avatar">👨‍💻</div>
+    </div>
+</div>
+
+<div id="overlay">
+    <h1 id="end-title">RAWAT INAP (BURNOUT)</h1>
+    <p id="end-desc"></p>
+    <button onclick="location.reload()">GANTI ASSET (KARYAWAN) BARU</button>
+</div>
+
+<script>
+    let score = 0;
+    let stress = 0;
+    let speed = 4000; 
+    let spawnRate = 1500; 
+    let gameActive = true;
+
+    const floor = document.getElementById('office-floor');
+    const scoreEl = document.getElementById('score');
+    const stressEl = document.getElementById('stress');
+    const bossComment = document.getElementById('boss-comment');
+    const worker = document.getElementById('worker-avatar');
+    const deadlineFx = document.getElementById('deadline-fx');
+
+    const bossQuotes = [
+        "Karena kamu cepat, kerjain ini juga ya.",
+        "Cuma kamu yang bisa saya andalkan.",
+        "Tim lain lagi burnout, tolong di-backup.",
+        "Ini kesempatan belajar (tambah beban).",
+        "Hadiah buat kamu: Dokumen Baru!"
+    ];
+
+    // 1. Stress naik otomatis seiring waktu (Tekanan Konstan)
+    setInterval(() => {
+        if (!gameActive) return;
+        stress += 1;
+        updateStress();
+    }, 1000);
+
+    function spawnTask() {
+        if (!gameActive) return;
+
+        const task = document.createElement('div');
+        task.className = 'task';
+        task.style.left = Math.random() * (window.innerWidth - 80) + 'px';
+        task.style.animationDuration = speed + 'ms';
+        task.innerHTML = `<strong>DOKUMEN</strong><span>URGENT</span>`;
+
+        task.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            if (!gameActive) return;
+            
+            score++;
+            scoreEl.innerText = score;
+            
+            // Makin rajin = Makin disiksa (Pace naik tiap 3 dokumen)
+            if (score % 3 === 0) {
+                speed = Math.max(1000, speed - 250);
+                spawnRate = Math.max(350, spawnRate - 100);
+                showBossComment();
+            }
+            
+            this.remove();
+            worker.innerText = "🔥";
+            setTimeout(() => {
+                worker.innerText = stress >= 70 ? "😫" : (stress >= 40 ? "😐" : "👨‍💻");
+            }, 100);
+        });
+
+        // 2. Deteksi kertas jatuh ke lantai (Stress naik drastis)
+        task.addEventListener('animationend', () => {
+            if (task.parentNode) {
+                stress += 15; // Hukuman jika dokumen lolos
+                updateStress();
+                task.remove();
+                
+                // Efek visual layar merah sebentar
+                deadlineFx.style.display = 'block';
+                setTimeout(() => deadlineFx.style.display = 'none', 100);
+            }
+        });
+
+        floor.appendChild(task);
+        setTimeout(spawnTask, spawnRate);
+    }
+
+    function updateStress() {
+        stressEl.innerText = `${Math.floor(stress)}%`;
+        
+        if (stress >= 100) {
+            stress = 100;
+            endGame();
+        }
+        
+        if (stress >= 70) {
+            stressEl.style.color = "#ff0000";
+            worker.innerText = "😫";
+        } else if (stress >= 40) {
+            stressEl.style.color = "#ffff00";
+            worker.innerText = "😐";
+        } else {
+            stressEl.style.color = "#00ff00";
+        }
+    }
+
+    function showBossComment() {
+        bossComment.innerText = bossQuotes[Math.floor(Math.random() * bossQuotes.length)];
+        bossComment.style.display = 'block';
+        setTimeout(() => bossComment.style.display = 'none', 2000);
+    }
+
+    function endGame() {
+        gameActive = false;
+        document.getElementById('overlay').style.display = 'flex';
+        document.getElementById('end-desc').innerHTML = `
+            Tugas Selesai: <strong>${score}</strong><br><br>
+            Anda pingsan di depan mesin fotokopi.<br>
+            Bos Anda mengirim pesan WA:<br>
+            <em>"GWS ya, tapi laporannya kirim dulu sebelum pingsan."</em>
+        `;
+    }
+
+    spawnTask();
+</script>
+
+</body>
+</html>
