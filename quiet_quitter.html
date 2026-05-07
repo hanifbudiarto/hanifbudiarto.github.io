@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Quiet Quitter: Stealth Pro</title>
+    <style>
+        :root {
+            --office-blue: #2c3e50;
+            --monitor-glow: #00ff00;
+            --danger: #ff9800;
+        }
+
+        body {
+            margin: 0;
+            background-color: #0f0f0f;
+            color: #ecf0f1;
+            font-family: 'Consolas', monospace;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            user-select: none;
+        }
+
+        #ui {
+            width: 100%;
+            padding: 15px 40px;
+            background: #000;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 2px solid #333;
+            box-sizing: border-box;
+        }
+
+        #game-area {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            height: 500px;
+            background: #1a1a1a;
+            margin-top: 30px;
+            border: 4px solid #333;
+            overflow: hidden;
+        }
+
+        /* Indikator Bahaya */
+        #proximity-alert {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 50%, rgba(255, 152, 0, 0.2) 100%);
+            display: none;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Karakter */
+        #boss {
+            position: absolute;
+            top: 60px;
+            left: -150px;
+            font-size: 5rem;
+            z-index: 5;
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+        }
+
+        #player {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 6rem;
+            z-index: 10;
+        }
+
+        /* Meja & Monitor */
+        #desk {
+            position: absolute;
+            bottom: 0; width: 100%; height: 150px;
+            background: #4e342e;
+            border-top: 8px solid #3e2723;
+        }
+
+        #monitor {
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 280px;
+            height: 160px;
+            background: #000;
+            border: 6px solid #555;
+            border-radius: 4px;
+            z-index: 11;
+        }
+
+        #screen-text {
+            padding: 8px;
+            font-size: 0.6rem;
+            color: var(--monitor-glow);
+            overflow: hidden;
+        }
+
+        /* Overlay */
+        #overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        button {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <div>GAJI BUTA: $<span id="score">0</span></div>
+    <div id="warning-msg" style="color: #666;">SUNYI...</div>
+</div>
+
+<div id="game-area">
+    <div id="proximity-alert"></div>
+    <div id="boss">👨‍💼</div>
+    <div id="player">👨‍💻</div>
+
+    <div id="monitor">
+        <div id="screen-text"></div>
+    </div>
+    <div id="desk"></div>
+
+    <div id="overlay">
+        <h1>THE QUIET QUITTER</h1>
+        <p>Gaji mengalir, kerja jangan sampai stres.</p>
+        <p style="color: #f1c40f;">TIPS: Perhatikan pinggiran layar. Jika mulai oranye, Bos sudah dekat!</p>
+        <button onclick="startGame()">MULAI SHIFT</button>
+    </div>
+</div>
+
+<script>
+    let score = 0;
+    let isWorking = false;
+    let gameActive = false;
+    let bossX = -150;
+    let bossTarget = -150;
+    let bossState = 'patrol'; // patrol, inspect, wait
+
+    const boss = document.getElementById('boss');
+    const alertFx = document.getElementById('proximity-alert');
+    const scoreEl = document.getElementById('score');
+    const screenText = document.getElementById('screen-text');
+    const warnMsg = document.getElementById('warning-msg');
+
+    // Kontrol: Tahan untuk pura-pura kerja
+    const handleStart = (e) => { e.preventDefault(); isWorking = true; };
+    const handleEnd = () => { isWorking = false; };
+
+    window.addEventListener('mousedown', handleStart);
+    window.addEventListener('mouseup', handleEnd);
+    window.addEventListener('touchstart', handleStart);
+    window.addEventListener('touchend', handleEnd);
+
+    function startGame() {
+        gameActive = true;
+        score = 0;
+        bossX = -150;
+        document.getElementById('overlay').style.display = 'none';
+        loop();
+    }
+
+    function loop() {
+        if (!gameActive) return;
+
+        // 1. Update Score & Visual
+        if (!isWorking) {
+            score += 5;
+            scoreEl.innerText = score;
+            screenText.innerHTML = "<h2 style='text-align:center; color:red;'>MABAR...</h2>";
+            document.getElementById('player').innerText = "📱";
+        } else {
+            document.getElementById('player').innerText = "⌨️";
+            const code = ["SELECT * FROM life WHERE stress = 0;", "npm install motivation --save-dev", "git commit -m 'pretending'"];
+            if(Math.random() > 0.8) screenText.innerHTML += code[Math.floor(Math.random()*code.length)] + "<br>";
+            if(screenText.innerHTML.length > 300) screenText.innerHTML = "";
+        }
+
+        // 2. Boss AI
+        updateBoss();
+
+        requestAnimationFrame(loop);
+    }
+
+    function updateBoss() {
+        // Logika Gerakan
+        if (bossState === 'patrol') {
+            bossX += 3;
+            boss.style.left = bossX + "px";
+            
+            // Berikan Peringatan Visual jika mendekat (X antara 50 - 250)
+            if (bossX > 0 && bossX < 350) {
+                alertFx.style.display = 'block';
+                warnMsg.innerText = "ADA LANGKAH KAKI...";
+                warnMsg.style.color = "#f39c12";
+            } else {
+                alertFx.style.display = 'none';
+                warnMsg.innerText = "AMAN (UNTUK SEKARANG)";
+                warnMsg.style.color = "#666";
+            }
+
+            // Bos berhenti untuk mengecek (Inspeksi)
+            if (bossX > 380 && bossX < 400) {
+                bossState = 'inspect';
+                boss.innerText = "🧐";
+                warnMsg.innerText = "DIA MELIHAT KE ARAHMU!";
+                warnMsg.style.color = "#e74c3c";
+
+                setTimeout(() => {
+                    if (gameActive) {
+                        if (!isWorking) {
+                            gameOver("Ketahuan nonton YouTube saat jam kerja!");
+                        } else {
+                            boss.innerText = "👨‍💼";
+                            bossState = 'leaving';
+                        }
+                    }
+                }, 1200);
+            }
+        } else if (bossState === 'leaving') {
+            bossX += 5;
+            boss.style.left = bossX + "px";
+            if (bossX > 1000) {
+                bossX = -300 - (Math.random() * 1000); // Random delay kemunculan
+                bossState = 'patrol';
+            }
+        }
+    }
+
+    function gameOver(msg) {
+        gameActive = false;
+        const overlay = document.getElementById('overlay');
+        overlay.style.display = 'flex';
+        overlay.innerHTML = `
+            <h1 style="color:#e74c3c">DIPECAT!</h1>
+            <p>${msg}</p>
+            <p>Total Gaji Buta yang Berhasil Diambil: $${score}</p>
+            <button onclick="location.reload()">CARI LOKER DI LINKEDIN</button>
+        `;
+    }
+</script>
+</body>
+</html>
